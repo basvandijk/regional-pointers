@@ -14,11 +14,9 @@
 
 module Foreign.Ptr.Region.Unsafe
     ( unsafePtr
-    , mapRegionalPtr
-    , wrap, wrap2, wrap3
+    , unsafeWrap, unsafeWrap2, unsafeWrap3
     ) where
 
 import Foreign.Ptr.Region.Internal ( unsafePtr
-                                   , mapRegionalPtr
-                                   , wrap, wrap2, wrap3
+                                   , unsafeWrap, unsafeWrap2, unsafeWrap3
                                    )

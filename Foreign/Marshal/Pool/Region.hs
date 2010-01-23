@@ -1,7 +1,8 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE UnicodeSyntax
+           , NoImplicitPrelude
+           , TypeFamilies
+           , RankNTypes
+  #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -25,7 +26,7 @@ module Foreign.Marshal.Pool.Region
 
 -- from base:
 import Control.Monad                          ( liftM )
-import qualified Foreign.Marshal.Pool as FMP
+import qualified Foreign.Marshal.Pool as FMP  ( Pool, newPool, freePool )
 
 -- from base-unicode-symbols:
 import Data.Function.Unicode                  ( (∘) )

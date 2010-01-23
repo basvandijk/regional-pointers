@@ -1,7 +1,8 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE UnicodeSyntax
+           , NoImplicitPrelude
+           , TypeFamilies
+           , CPP
+  #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -18,9 +19,9 @@ module Foreign.Ptr.Region.Internal
     , RegionalPtr
 
       -- * Utility functions for lifting operations on Ptrs to RegionalPtrs
-    , unsafePtr
     , mapRegionalPtr
-    , wrap, wrap2, wrap3
+    , unsafePtr
+    , unsafeWrap, unsafeWrap2, unsafeWrap3
     ) where
 
 
@@ -51,6 +52,9 @@ import Control.Monad.Trans.Region.Unsafe      ( Resource
                                               , internalHandle
                                               , mapInternalHandle
                                               )
+#ifdef __HADDOCK__
+import Control.Monad.Trans.Region ( open )
+#endif
 
 
 --------------------------------------------------------------------------------
@@ -59,7 +63,7 @@ import Control.Monad.Trans.Region.Unsafe      ( Resource
 
 {-| Represents memory of 'size' number of bytes which may be marshalled to or
 from Haskell values of type @&#945;@. Before you can use the memory you have to
-allocate it using @open@.
+allocate it using 'open'.
 -}
 newtype Memory α = Memory { size ∷ Int }
 
@@ -84,20 +88,20 @@ mapRegionalPtr f = mapInternalHandle $ Pointer ∘ f ∘ ptr
 unsafePtr ∷ RegionalPtr α r → Ptr α
 unsafePtr = ptr ∘ internalHandle
 
-wrap ∷ MonadIO m
-     ⇒ (Ptr α → IO β)
-     → (RegionalPtr α r → m β)
-wrap f rp = liftIO $ f $ unsafePtr rp
+unsafeWrap ∷ MonadIO m
+           ⇒ (Ptr α → IO β)
+           → (RegionalPtr α r → m β)
+unsafeWrap f rp = liftIO $ f $ unsafePtr rp
 
-wrap2 ∷ MonadIO m
-      ⇒ (Ptr α → γ → IO β)
-      → (RegionalPtr α r → γ → m β)
-wrap2 f rp x = liftIO $ f (unsafePtr rp) x
+unsafeWrap2 ∷ MonadIO m
+            ⇒ (Ptr α → γ → IO β)
+            → (RegionalPtr α r → γ → m β)
+unsafeWrap2 f rp x = liftIO $ f (unsafePtr rp) x
 
-wrap3 ∷ MonadIO m
-      ⇒ (Ptr α → γ → δ → IO β)
-      → (RegionalPtr α r → γ → δ → m β)
-wrap3 f rp x y = liftIO $ f (unsafePtr rp) x y
+unsafeWrap3 ∷ MonadIO m
+            ⇒ (Ptr α → γ → δ → IO β)
+            → (RegionalPtr α r → γ → δ → m β)
+unsafeWrap3 f rp x y = liftIO $ f (unsafePtr rp) x y
 
 
 -- The End ---------------------------------------------------------------------

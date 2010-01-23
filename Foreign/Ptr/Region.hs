@@ -1,5 +1,4 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE UnicodeSyntax, NoImplicitPrelude #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -29,6 +28,8 @@ module Foreign.Ptr.Region
     , module Control.Monad.Trans.Region
 
       -- *  Pure functions on regional pointers
+    , mapRegionalPtr
+
     , castPtr
     , plusPtr
     , alignPtr
@@ -41,15 +42,15 @@ module Foreign.Ptr.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Data.Int ( Int )
+import Data.Int                    ( Int )
 import qualified Foreign.Ptr as FP ( castPtr, plusPtr, alignPtr, minusPtr )
 
 -- from regions:
 import Control.Monad.Trans.Region -- (re-exported entirely)
 
 -- from ourselves:
-import Foreign.Ptr.Region.Internal ( Memory(..), RegionalPtr )
-import Foreign.Ptr.Region.Unsafe   ( unsafePtr, mapRegionalPtr )
+import Foreign.Ptr.Region.Internal ( Memory(..), RegionalPtr, mapRegionalPtr )
+import Foreign.Ptr.Region.Unsafe   ( unsafePtr )
 
 
 --------------------------------------------------------------------------------

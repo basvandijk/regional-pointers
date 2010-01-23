@@ -1,6 +1,7 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE UnicodeSyntax
+           , NoImplicitPrelude
+           , RankNTypes
+  #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -21,15 +22,11 @@ module Foreign.Marshal.Utils.Region
        , FMU.fromBool
        , FMU.toBool
 
-         -- TODO:
-         -- -- ** Marshalling of Maybe values
-         -- , maybeNew
-         -- , maybeWith
-         -- , maybePeek
+         -- ** Marshalling of Maybe values
+         -- | /TODO:/ Define and export: @maybeNew@, @maybeWith@ and @maybePeek@.
 
-         -- TODO:
-         -- -- ** Marshalling lists of storable objects
-         -- , withMany
+         -- ** Marshalling lists of storable objects
+         -- | /TODO:/ Define and export: @withMany@.
 
          -- ** Haskellish interface to memcpy and memmove
          -- | (argument order: destination, source)
@@ -43,31 +40,30 @@ module Foreign.Marshal.Utils.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Data.Function                     ( ($) )
-import Data.Int                          ( Int )
-import Control.Monad                     ( return, (>>=), fail, (>>) )
-import Foreign.Storable                  ( Storable )
+import Data.Function                          ( ($) )
+import Data.Int                               ( Int )
+import Control.Monad                          ( return, (>>=), fail, (>>) )
+import Foreign.Storable                       ( Storable )
 import qualified Foreign.Marshal.Utils as FMU ( fromBool,  toBool
                                               , copyBytes, moveBytes
                                               )
-
 -- from base-unicode-symbols:
-import Data.Function.Unicode             ( (∘) )
+import Data.Function.Unicode                  ( (∘) )
 
 -- from transformers:
-import Control.Monad.Trans               ( MonadIO, liftIO )
+import Control.Monad.Trans                    ( MonadIO, liftIO )
 
 -- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO             ( MonadCatchIO )
+import Control.Monad.CatchIO                  ( MonadCatchIO )
 
 -- from regions:
-import Control.Monad.Trans.Region        ( RegionT, ParentOf )
+import Control.Monad.Trans.Region             ( RegionT, ParentOf )
 
 -- from ourselves:
-import Foreign.Ptr.Region                ( RegionalPtr )
-import Foreign.Ptr.Region.Unsafe         ( unsafePtr )
-import Foreign.Marshal.Alloc.Region      ( alloca, malloc )
-import Foreign.Storable.Region           ( poke )
+import Foreign.Ptr.Region                     ( RegionalPtr )
+import Foreign.Ptr.Region.Unsafe              ( unsafePtr )
+import Foreign.Marshal.Alloc.Region           ( alloca, malloc )
+import Foreign.Storable.Region                ( poke )
 
 
 --------------------------------------------------------------------------------
@@ -102,17 +98,19 @@ copyBytes ∷ ( pr1 `ParentOf` cr
             , pr2 `ParentOf` cr
             , MonadIO cr
             )
-          ⇒ RegionalPtr α pr1 → RegionalPtr α pr2 → Int → cr ()
-copyBytes rp1 rp2 = liftIO ∘ FMU.copyBytes (unsafePtr rp1)
-                                           (unsafePtr rp2)
+          ⇒ RegionalPtr α pr1 -- ^ Destination
+          → RegionalPtr α pr2 -- ^ Source
+          → Int → cr ()
+copyBytes rp1 rp2 = liftIO ∘ FMU.copyBytes (unsafePtr rp1) (unsafePtr rp2)
 
 moveBytes ∷ ( pr1 `ParentOf` cr
             , pr2 `ParentOf` cr
             , MonadIO cr
             )
-          ⇒ RegionalPtr α pr1 → RegionalPtr α pr2 → Int → cr ()
-moveBytes rp1 rp2 = liftIO ∘ FMU.moveBytes (unsafePtr rp1)
-                                           (unsafePtr rp2)
+          ⇒ RegionalPtr α pr1 -- ^ Destination
+          → RegionalPtr α pr2 -- ^ Source
+          → Int → cr ()
+moveBytes rp1 rp2 = liftIO ∘ FMU.moveBytes (unsafePtr rp1) (unsafePtr rp2)
 
 
 -- The End ---------------------------------------------------------------------

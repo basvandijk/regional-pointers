@@ -1,7 +1,8 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE UnicodeSyntax
+           , NoImplicitPrelude
+           , RankNTypes
+           , CPP
+  #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -9,6 +10,8 @@
 -- Copyright   :  (c) 2010 Bas van Dijk
 -- License     :  BSD3 (see the file LICENSE)
 -- Maintainer  :  Bas van Dijk <v.dijk.bas@gmail.com>
+--
+-- Lifts functions and types from @Foreign.C.String@ to regional pointers.
 --
 -------------------------------------------------------------------------------
 
@@ -44,52 +47,72 @@ module Foreign.C.String.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Prelude                      ( fromInteger, fromIntegral )
-import Data.Function                ( ($) )
-import Data.Bool                    ( Bool )
-import Data.Int                     ( Int )
-import Data.Char                    ( Char, String, ord )
-import Data.List                    ( map, length )
-import Control.Arrow                ( first )
-import Control.Monad                ( return, (>>=), fail)
-import Foreign.C.Types              ( CChar, CWchar )
-import Foreign.Storable             ( Storable )
-import qualified Foreign.C.String as FCS
+import Prelude                           ( fromInteger, fromIntegral )
+import Data.Function                     ( ($) )
+import Data.Bool                         ( Bool )
+import Data.Int                          ( Int )
+import Data.Char                         ( Char, String, ord )
+import Data.List                         ( map, length )
+import Control.Arrow                     ( first )
+import Control.Monad                     ( return, (>>=), fail)
+import Foreign.C.Types                   ( CChar, CWchar )
+import Foreign.Storable                  ( Storable )
+import qualified Foreign.C.String as FCS ( charIsRepresentable
+                                         , peekCAString, peekCAStringLen
+                                         , peekCWString, peekCWStringLen
+                                         , castCharToCChar, castCCharToChar
+                                         )
+
+#ifdef __HADDOCK__
+import Foreign.C.String ( CString,  CStringLen
+                        , CWString, CWStringLen
+                        )
+#endif
 
 #ifdef mingw32_HOST_OS
 -- These are only used in the mingw32 version of 'charsToCWchars':
-import Prelude                      ( (-), (+), mod, div )
-import Data.List                    ( foldr )
-import Data.Bool                    ( otherwise )
-import Control.Monad                ( (>>) )
-import Data.Ord                     ( (<) )
+import Prelude                           ( (-), (+), mod, div )
+import Data.List                         ( foldr )
+import Data.Bool                         ( otherwise )
+import Control.Monad                     ( (>>) )
+import Data.Ord                          ( (<) )
 #endif
 
 -- from base-unicode-symbols:
-import Data.Function.Unicode        ( (∘) )
+import Data.Function.Unicode             ( (∘) )
 
 -- from transformers:
-import Control.Monad.Trans          ( MonadIO, liftIO )
+import Control.Monad.Trans               ( MonadIO, liftIO )
 
 -- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO        ( MonadCatchIO )
+import Control.Monad.CatchIO             ( MonadCatchIO )
 
 -- from regions:
-import Control.Monad.Trans.Region   ( RegionT, ParentOf )
+import Control.Monad.Trans.Region        ( RegionT, ParentOf )
 
 -- from ourselves:
-import Foreign.Marshal.Array.Region ( newArray0, newArray
-                                    , withArray0, withArrayLen
-                                    )
-import Foreign.Ptr.Region           ( RegionalPtr )
-import Foreign.Ptr.Region.Unsafe    ( unsafePtr, wrap )
+import Foreign.Marshal.Array.Region      ( newArray0, newArray
+                                         , withArray0, withArrayLen
+                                         )
+import Foreign.Ptr.Region                ( RegionalPtr )
+import Foreign.Ptr.Region.Unsafe         ( unsafePtr, unsafeWrap )
 
 
 --------------------------------------------------------------------------------
 -- Regional C Strings
 --------------------------------------------------------------------------------
 
+-- | Handy type synonym for a regional pointer to an array of C characters
+-- terminated by a NUL.
+--
+-- This should provide a safer replacement for @Foreign.C.String.'CString'@.
 type RegionalCString    r =  RegionalPtr CChar r
+
+-- | Handy type synonym for a regional pointer to an array of C characters which
+-- is paired with the length of the array instead of terminated by a NUL.
+-- (Thus allowing NUL characters in the middle of the string)
+--
+-- This should provide a safer replacement for @Foreign.C.String.'CStringLen'@.
 type RegionalCStringLen r = (RegionalPtr CChar r, Int)
 
 
@@ -135,7 +158,7 @@ charIsRepresentable = liftIO ∘ FCS.charIsRepresentable
 
 peekCAString ∷ (pr `ParentOf` cr, MonadIO cr)
              ⇒ RegionalCString pr → cr String
-peekCAString = wrap FCS.peekCAString
+peekCAString = unsafeWrap FCS.peekCAString
 
 peekCAStringLen ∷ (pr `ParentOf` cr, MonadIO cr)
                 ⇒ RegionalCStringLen pr → cr String
@@ -167,12 +190,22 @@ withCAStringLen str f = withArrayLen (charsToCChars str)
 -- C wide strings
 --------------------------------------------------------------------------------
 
-type RegionalCWString    r =  RegionalPtr CWchar r
+-- | Handy type synonym for a regional pointer to an array of C wide characters
+-- terminated by a NUL.
+--
+-- This should provide a safer replacement for @Foreign.C.String.'CWString'@.
+type RegionalCWString r = RegionalPtr CWchar r
+
+-- | Handy type synonym for a regional pointer to an array of C wide characters
+-- which is paired with the length of the array instead of terminated by a NUL.
+-- (Thus allowing NUL characters in the middle of the string)
+--
+-- This should provide a safer replacement for @Foreign.C.String.'CWStringLen'@.
 type RegionalCWStringLen r = (RegionalPtr CWchar r, Int)
 
 peekCWString ∷ (pr `ParentOf` cr, MonadIO cr)
              ⇒ RegionalCWString pr → cr String
-peekCWString = wrap FCS.peekCWString
+peekCWString = unsafeWrap FCS.peekCWString
 
 peekCWStringLen ∷ (pr `ParentOf` cr, MonadIO cr)
                 ⇒ RegionalCWStringLen pr → cr String

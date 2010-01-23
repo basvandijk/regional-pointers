@@ -1,6 +1,7 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UnicodeSyntax
+           , NoImplicitPrelude
+           , TypeFamilies
+  #-}
 
 -------------------------------------------------------------------------------
 -- |

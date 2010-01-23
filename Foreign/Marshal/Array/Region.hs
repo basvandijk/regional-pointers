@@ -1,7 +1,8 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UnicodeSyntax
+           , NoImplicitPrelude
+           , RankNTypes
+           , ScopedTypeVariables
+  #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -19,9 +20,7 @@ module Foreign.Marshal.Array.Region
     , allocaArray
     , allocaArray0
 
-    -- TODO:
-    -- , reallocArray
-    -- , reallocArray0
+    -- | /TODO:/ Define and export @reallocArray@ and @reallocArray0@
 
       -- * Marshalling
     , peekArray
@@ -54,35 +53,42 @@ module Foreign.Marshal.Array.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Prelude                      ( undefined, (*), succ )
-import Data.Function                ( ($), flip, const )
-import Data.Int                     ( Int )
-import Data.List                    ( length )
-import Data.Eq                      ( Eq )
-import Control.Monad                ( return, (>>=), fail
-                                    , (>>)
-                                    )
-import System.IO                    ( IO )
-import Foreign.Ptr                  ( Ptr )
-import Foreign.Storable             ( Storable, sizeOf )
-import qualified Foreign.Marshal.Array as FMA
-
+import Prelude                                ( undefined, (*), succ )
+import Data.Function                          ( ($), flip, const )
+import Data.Int                               ( Int )
+import Data.List                              ( length )
+import Data.Eq                                ( Eq )
+import Control.Monad                          ( return, (>>=), fail
+                                              , (>>)
+                                              )
+import System.IO                              ( IO )
+import Foreign.Ptr                            ( Ptr )
+import Foreign.Storable                       ( Storable, sizeOf )
+import qualified Foreign.Marshal.Array as FMA ( peekArray
+                                              , peekArray0
+                                              , pokeArray
+                                              , pokeArray0
+                                              , copyArray
+                                              , moveArray
+                                              , lengthArray0
+                                              , advancePtr
+                                              )
 -- from base-unicode-symbols:
-import Data.Function.Unicode        ( (∘) )
+import Data.Function.Unicode                  ( (∘) )
 
 -- from transformers:
-import Control.Monad.Trans          ( MonadIO, liftIO )
+import Control.Monad.Trans                    ( MonadIO, liftIO )
 
 -- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO        ( MonadCatchIO )
+import Control.Monad.CatchIO                  ( MonadCatchIO )
 
 -- from regions:
-import Control.Monad.Trans.Region   ( RegionT , ParentOf )
+import Control.Monad.Trans.Region             ( RegionT , ParentOf )
 
 -- from ourselves:
-import Foreign.Ptr.Region           ( RegionalPtr )
-import Foreign.Ptr.Region.Unsafe    ( unsafePtr, wrap2, mapRegionalPtr )
-import Foreign.Marshal.Alloc.Region ( mallocBytes, allocaBytes )
+import Foreign.Ptr.Region                     ( RegionalPtr, mapRegionalPtr )
+import Foreign.Ptr.Region.Unsafe              ( unsafePtr, unsafeWrap2 )
+import Foreign.Marshal.Alloc.Region           ( mallocBytes, allocaBytes )
 
 
 --------------------------------------------------------------------------------
@@ -118,25 +124,25 @@ allocaArray0 = allocaArray ∘ succ
 -- Marshalling
 --------------------------------------------------------------------------------
 
-wrap2flp ∷ MonadIO m
-         ⇒ (γ → Ptr α → IO β)
-         → (γ → RegionalPtr α r → m β)
-wrap2flp = flip ∘ wrap2 ∘ flip
+unsafeWrap2flp ∷ MonadIO m
+               ⇒ (γ → Ptr α → IO β)
+               → (γ → RegionalPtr α r → m β)
+unsafeWrap2flp = flip ∘ unsafeWrap2 ∘ flip
 
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.peekArray'.
 peekArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
           ⇒ Int → RegionalPtr α pr → cr [α]
-peekArray =  wrap2flp FMA.peekArray
+peekArray =  unsafeWrap2flp FMA.peekArray
 
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.peekArray0'.
 peekArray0 ∷ (Storable α, Eq α, pr `ParentOf` cr, MonadIO cr)
            ⇒ α → RegionalPtr α pr → cr [α]
-peekArray0 = wrap2flp FMA.peekArray0
+peekArray0 = unsafeWrap2flp FMA.peekArray0
 
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.pokeArray'.
 pokeArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
           ⇒ RegionalPtr α pr → [α] → cr ()
-pokeArray = wrap2 FMA.pokeArray
+pokeArray = unsafeWrap2 FMA.pokeArray
 
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.pokeArray0'.
 pokeArray0 ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
@@ -192,7 +198,7 @@ withArrayLen0 ∷ (Storable α, MonadCatchIO pr)
               → [α]
               → (∀ s. Int → RegionalPtr α (RegionT s pr) → RegionT s pr β)
               → pr β
-withArrayLen0 marker vals f  =
+withArrayLen0 marker vals f =
   allocaArray0 len $ \ptr → do
     pokeArray0 marker ptr vals
     res ← f len ptr
@@ -208,15 +214,12 @@ withArrayLen0 marker vals f  =
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.copyArray'.
 copyArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
           ⇒ RegionalPtr α pr → RegionalPtr α pr → Int → cr ()
-copyArray rp1 rp2 = liftIO ∘ FMA.copyArray (unsafePtr rp1)
-                                           (unsafePtr rp2)
-
+copyArray rp1 rp2 = liftIO ∘ FMA.copyArray (unsafePtr rp1) (unsafePtr rp2)
 
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.moveArray'.
 moveArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
           ⇒ RegionalPtr α pr → RegionalPtr α pr → Int → cr ()
-moveArray rp1 rp2 = liftIO ∘ FMA.moveArray (unsafePtr rp1)
-                                           (unsafePtr rp2)
+moveArray rp1 rp2 = liftIO ∘ FMA.moveArray (unsafePtr rp1) (unsafePtr rp2)
 
 
 --------------------------------------------------------------------------------
@@ -226,7 +229,7 @@ moveArray rp1 rp2 = liftIO ∘ FMA.moveArray (unsafePtr rp1)
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.lengthArray0'.
 lengthArray0 ∷ (Storable α, Eq α, pr `ParentOf` cr, MonadIO cr)
              ⇒ α → RegionalPtr α pr → cr Int
-lengthArray0 = wrap2flp FMA.lengthArray0
+lengthArray0 = unsafeWrap2flp FMA.lengthArray0
 
 
 --------------------------------------------------------------------------------
