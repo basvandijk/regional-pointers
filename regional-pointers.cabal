@@ -9,8 +9,7 @@ author:        Bas van Dijk
 maintainer:    Bas van Dijk <v.dijk.bas@gmail.com>
 stability:     experimental
 category:      System, Monadic Regions
-synopsis:      Allocate memory in a region which is automatically freed and
-               which can't be referenced outside the region.
+synopsis:      Regional memory pointers
 description:   The library allows you to allocate memory in a region yielding a
                regional pointer to it. When the region terminates all pointers
                are automatically freed. Most importantly, a pointer can't be
