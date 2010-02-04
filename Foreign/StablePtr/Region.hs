@@ -47,17 +47,17 @@ import Control.Monad.Trans               ( MonadIO, liftIO )
 import Control.Monad.CatchIO             ( MonadCatchIO )
 
 -- from regions:
+import Control.Resource                  ( Resource
+                                         , Handle
+                                         , openResource
+                                         , closeResource
+                                         )
 import Control.Monad.Trans.Region        ( RegionT
                                          , RegionalHandle
                                          , open
                                          , ParentOf
                                          )
-import Control.Monad.Trans.Region.Unsafe ( Resource
-                                         , Handle
-                                         , openResource
-                                         , closeResource
-                                         , internalHandle
-                                         )
+import Control.Monad.Trans.Region.Unsafe ( internalHandle )
 
 
 --------------------------------------------------------------------------------

@@ -44,12 +44,13 @@ import Data.Function.Unicode                  ( (∘) )
 import Control.Monad.Trans                    ( MonadIO, liftIO )
 
 -- from regions:
-import Control.Monad.Trans.Region             ( RegionalHandle )
-import Control.Monad.Trans.Region.Unsafe      ( Resource
+import Control.Resource                       ( Resource
                                               , Handle
                                               , openResource
                                               , closeResource
-                                              , internalHandle
+                                              )
+import Control.Monad.Trans.Region             ( RegionalHandle )
+import Control.Monad.Trans.Region.Unsafe      ( internalHandle
                                               , mapInternalHandle
                                               )
 #ifdef __HADDOCK__
