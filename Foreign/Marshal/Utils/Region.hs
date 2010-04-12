@@ -51,7 +51,7 @@ import qualified Foreign.Marshal.Utils as FMU ( fromBool,  toBool
 import Data.Function.Unicode                  ( (∘) )
 
 -- from transformers:
-import Control.Monad.Trans                    ( MonadIO, liftIO )
+import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
 -- from MonadCatchIO-transformers:
 import Control.Monad.CatchIO                  ( MonadCatchIO )

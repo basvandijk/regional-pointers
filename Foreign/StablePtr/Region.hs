@@ -41,7 +41,7 @@ import qualified Foreign.StablePtr as FS ( StablePtr
 import Data.Function.Unicode             ( (∘) )
 
 -- from transformers:
-import Control.Monad.Trans               ( MonadIO, liftIO )
+import Control.Monad.IO.Class            ( MonadIO, liftIO )
 
 -- from MonadCatchIO-transformers:
 import Control.Monad.CatchIO             ( MonadCatchIO )

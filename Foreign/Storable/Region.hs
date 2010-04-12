@@ -31,7 +31,7 @@ import qualified Foreign.Storable as FS ( peekElemOff, pokeElemOff
                                         , peek,        poke
                                         )
 -- from transformers:
-import Control.Monad.Trans              ( MonadIO )
+import Control.Monad.IO.Class           ( MonadIO )
 
 -- from regions:
 import Control.Monad.Trans.Region       ( ParentOf )

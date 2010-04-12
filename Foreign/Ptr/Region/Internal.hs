@@ -41,13 +41,13 @@ import qualified Foreign.Marshal.Alloc as FMA ( mallocBytes, free )
 import Data.Function.Unicode                  ( (∘) )
 
 -- from transformers:
-import Control.Monad.Trans                    ( MonadIO, liftIO )
+import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
 -- from regions:
 import Control.Resource                       ( Resource
                                               , Handle
-                                              , openResource
-                                              , closeResource
+                                              , open
+                                              , close
                                               )
 import Control.Monad.Trans.Region             ( RegionalHandle )
 import Control.Monad.Trans.Region.Unsafe      ( internalHandle
@@ -71,8 +71,8 @@ newtype Memory α = Memory { size ∷ Int }
 instance Resource (Memory α) where
     newtype Handle (Memory α) = Pointer { ptr ∷ Ptr α }
 
-    openResource  = liftM Pointer ∘ FMA.mallocBytes ∘ size
-    closeResource = FMA.free ∘ ptr
+    open  = liftM Pointer ∘ FMA.mallocBytes ∘ size
+    close = FMA.free ∘ ptr
 
 -- | Handy type synonym for a regional handle to memory. This should provide a
 -- safer replacement for @Foreign.Ptr.@'Ptr'
