@@ -212,13 +212,13 @@ withArrayLen0 marker vals f =
 --------------------------------------------------------------------------------
 
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.copyArray'.
-copyArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
-          ⇒ RegionalPtr α pr → RegionalPtr α pr → Int → cr ()
+copyArray ∷ (Storable α, pr1 `ParentOf` cr, pr2 `ParentOf` cr, MonadIO cr)
+          ⇒ RegionalPtr α pr1 → RegionalPtr α pr2 → Int → cr ()
 copyArray rp1 rp2 = liftIO ∘ FMA.copyArray (unsafePtr rp1) (unsafePtr rp2)
 
 -- | Wraps: @Foreign.Marshal.Array.@'FMA.moveArray'.
-moveArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
-          ⇒ RegionalPtr α pr → RegionalPtr α pr → Int → cr ()
+moveArray ∷ (Storable α, pr1 `ParentOf` cr, pr2 `ParentOf` cr, MonadIO cr)
+          ⇒ RegionalPtr α pr1 → RegionalPtr α pr1 → Int → cr ()
 moveArray rp1 rp2 = liftIO ∘ FMA.moveArray (unsafePtr rp1) (unsafePtr rp2)
 
 
