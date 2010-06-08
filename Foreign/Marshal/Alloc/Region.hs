@@ -121,10 +121,11 @@ This should provide a safer replacement for:
 mallocBytes ∷ MonadCatchIO pr
             ⇒ Int
             → RegionT s pr (RegionalPtr α (RegionT s pr))
-mallocBytes size = do ptr ← liftIO $ FMA.mallocBytes size
-                      let closeAction = free ptr
-                      ch ← register closeAction
-                      return $ RegionalPtr ptr ch
+mallocBytes size = block $ do
+                     ptr ← liftIO $ FMA.mallocBytes size
+                     let closeAction = free ptr
+                     ch ← register closeAction
+                     return $ RegionalPtr ptr ch
 
 -- TODO:
 -- realloc ∷ (Storable β, pr `ParentOf` cr, MonadIO cr)
