@@ -1,7 +1,6 @@
 {-# LANGUAGE UnicodeSyntax
            , NoImplicitPrelude
-           , TypeFamilies
-           , CPP
+           , KindSignatures
   #-}
 
 -------------------------------------------------------------------------------
@@ -15,11 +14,9 @@
 
 module Foreign.Ptr.Region.Internal
     ( -- * Memory as a scarce resource
-      Memory(..)
-    , RegionalPtr
+      RegionalPtr(RegionalPtr)
 
       -- * Utility functions for lifting operations on Ptrs to RegionalPtrs
-    , mapRegionalPtr
     , unsafePtr
     , unsafeWrap, unsafeWrap2, unsafeWrap3
     ) where
@@ -30,64 +27,36 @@ module Foreign.Ptr.Region.Internal
 --------------------------------------------------------------------------------
 
 -- from base:
-import Data.Function                          ( ($) )
-import Data.Int                               ( Int )
-import Control.Monad                          ( liftM )
-import System.IO                              ( IO )
-import Foreign.Ptr                            ( Ptr )
-import qualified Foreign.Marshal.Alloc as FMA ( mallocBytes, free )
-
--- from base-unicode-symbols:
-import Data.Function.Unicode                  ( (∘) )
+import Control.Monad ( liftM )
+import Data.Function ( ($) )
+import System.IO     ( IO )
+import Foreign.Ptr   ( Ptr )
 
 -- from transformers:
-import Control.Monad.IO.Class                 ( MonadIO, liftIO )
+import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 -- from regions:
-import Control.Resource                       ( Resource
-                                              , Handle
-                                              , open
-                                              , close
-                                              )
-import Control.Monad.Trans.Region             ( RegionalHandle )
-import Control.Monad.Trans.Region.Unsafe      ( internalHandle
-                                              , mapInternalHandle
-                                              )
-#ifdef __HADDOCK__
-import Control.Monad.Trans.Region ( open )
-#endif
-
+import Control.Monad.Trans.Region.Close ( CloseHandle )
+import Control.Monad.Trans.Region       ( Dup(dup) )
 
 --------------------------------------------------------------------------------
 -- Memory as a scarce resource
 --------------------------------------------------------------------------------
 
-{-| Represents memory of 'size' number of bytes which may be marshalled to or
-from Haskell values of type @&#945;@. Before you can use the memory you have to
-allocate it using 'open'.
--}
-newtype Memory α = Memory { size ∷ Int }
+-- | A regional handle to memory. This should provide a safer replacement for
+-- @Foreign.Ptr.@'Ptr'
+data RegionalPtr α (r ∷ * → *) = RegionalPtr (Ptr α) (CloseHandle r)
 
-instance Resource (Memory α) where
-    newtype Handle (Memory α) = Pointer { ptr ∷ Ptr α }
-
-    open  = liftM Pointer ∘ FMA.mallocBytes ∘ size
-    close = FMA.free ∘ ptr
-
--- | Handy type synonym for a regional handle to memory. This should provide a
--- safer replacement for @Foreign.Ptr.@'Ptr'
-type RegionalPtr α r = RegionalHandle (Memory α) r
+instance Dup (RegionalPtr α) where
+    dup (RegionalPtr ptr ch) = liftM (RegionalPtr ptr) $ dup ch
 
 
 --------------------------------------------------------------------------------
 -- Utility functions for lifting operations on Ptrs to RegionalPtrs
 --------------------------------------------------------------------------------
 
-mapRegionalPtr ∷ (Ptr α → Ptr β) → (RegionalPtr α r → RegionalPtr β r)
-mapRegionalPtr f = mapInternalHandle $ Pointer ∘ f ∘ ptr
-
 unsafePtr ∷ RegionalPtr α r → Ptr α
-unsafePtr = ptr ∘ internalHandle
+unsafePtr (RegionalPtr ptr _) = ptr
 
 unsafeWrap ∷ MonadIO m
            ⇒ (Ptr α → IO β)

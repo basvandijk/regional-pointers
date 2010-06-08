@@ -11,19 +11,16 @@
 
 module Foreign.Ptr.Region
     ( -- * Memory as a scarce resource
-      Memory(..)
-    , RegionalPtr
+      RegionalPtr
 
       {-| Note that this module re-exports the @Control.Monad.Trans.Region@
       module from the @regions@ package which allows you to:
-
-      * 'open' 'Memory' in a 'RegionT'.
 
       * Run a region using 'runRegionT'.
 
       * Concurrently run a region inside another region using 'forkTopRegion'.
 
-       * Duplicate a regional pointer to a parent region using 'dup'.
+       * Duplicate a 'RegionalPtr' to a parent region using 'dup'.
       -}
     , module Control.Monad.Trans.Region
 
@@ -43,19 +40,24 @@ module Foreign.Ptr.Region
 
 -- from base:
 import Data.Int                    ( Int )
+import           Foreign.Ptr       ( Ptr )
 import qualified Foreign.Ptr as FP ( castPtr, plusPtr, alignPtr, minusPtr )
 
 -- from regions:
 import Control.Monad.Trans.Region -- (re-exported entirely)
 
 -- from ourselves:
-import Foreign.Ptr.Region.Internal ( Memory(..), RegionalPtr, mapRegionalPtr )
+import Foreign.Ptr.Region.Internal ( RegionalPtr(RegionalPtr) )
 import Foreign.Ptr.Region.Unsafe   ( unsafePtr )
 
 
 --------------------------------------------------------------------------------
 -- Pure functions on regional pointers
 --------------------------------------------------------------------------------
+
+mapRegionalPtr ∷ (Ptr α → Ptr β) → (RegionalPtr α r → RegionalPtr β r)
+mapRegionalPtr f (RegionalPtr ptr ch) = RegionalPtr (f ptr) ch
+
 
 -- | Wraps: @Foreign.Ptr.@'FP.castPtr'
 castPtr ∷ RegionalPtr α r → RegionalPtr β r
