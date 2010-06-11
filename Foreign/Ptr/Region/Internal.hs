@@ -44,7 +44,7 @@ import Control.Monad.Trans.Region       ( Dup(dup) )
 --------------------------------------------------------------------------------
 
 -- | A regional handle to memory. This should provide a safer replacement for
--- @Foreign.Ptr.@'Ptr'
+-- @Foreign.Ptr.'Ptr'@
 data RegionalPtr α (r ∷ * → *) = RegionalPtr (Ptr α) (CloseHandle r)
 
 instance Dup (RegionalPtr α) where

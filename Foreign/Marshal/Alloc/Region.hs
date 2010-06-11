@@ -52,11 +52,11 @@ import Prelude.Unicode            ( (⊥) )
 import Control.Monad.IO.Class     ( liftIO )
 
 -- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO      ( MonadCatchIO )
+import Control.Monad.CatchIO      ( MonadCatchIO, block )
 
 -- from regions:
 import Control.Monad.Trans.Region       ( RegionT, runRegionT )
-import Control.Monad.Trans.Region.Close ( register )
+import Control.Monad.Trans.Region.Close ( onExit )
 
 -- from ourselves:
 import Foreign.Ptr.Region.Internal ( RegionalPtr(RegionalPtr) )
@@ -123,8 +123,7 @@ mallocBytes ∷ MonadCatchIO pr
             → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocBytes size = block $ do
                      ptr ← liftIO $ FMA.mallocBytes size
-                     let closeAction = free ptr
-                     ch ← register closeAction
+                     ch ← onExit $ free ptr
                      return $ RegionalPtr ptr ch
 
 -- TODO:
