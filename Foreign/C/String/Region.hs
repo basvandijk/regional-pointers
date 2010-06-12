@@ -99,7 +99,7 @@ import Foreign.Ptr.Region.Unsafe         ( unsafePtr, unsafeWrap )
 
 
 --------------------------------------------------------------------------------
--- Regional C Strings
+-- * Regional C Strings
 --------------------------------------------------------------------------------
 
 -- | Handy type synonym for a regional pointer to an array of C characters
@@ -117,7 +117,7 @@ type RegionalCStringLen r = (RegionalPtr CChar r, Int)
 
 
 --------------------------------------------------------------------------------
--- Using a locale-dependent encoding
+-- * Using a locale-dependent encoding
 --------------------------------------------------------------------------------
 
 peekCString ∷ (pr `ParentOf` cr, MonadIO cr)
@@ -153,7 +153,7 @@ charIsRepresentable = liftIO ∘ FCS.charIsRepresentable
 
 
 --------------------------------------------------------------------------------
--- Using 8-bit characters
+-- * Using 8-bit characters
 --------------------------------------------------------------------------------
 
 peekCAString ∷ (pr `ParentOf` cr, MonadIO cr)
@@ -187,7 +187,7 @@ withCAStringLen str f = withArrayLen (charsToCChars str)
 
 
 --------------------------------------------------------------------------------
--- C wide strings
+-- * C wide strings
 --------------------------------------------------------------------------------
 
 -- | Handy type synonym for a regional pointer to an array of C wide characters
@@ -234,7 +234,7 @@ withCWStringLen str f = withArrayLen (charsToCWchars str)
 
 
 --------------------------------------------------------------------------------
--- Utility functions
+-- * Utility functions
 --------------------------------------------------------------------------------
 
 nUL ∷ CChar
