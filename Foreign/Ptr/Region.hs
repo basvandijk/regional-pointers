@@ -20,7 +20,7 @@ module Foreign.Ptr.Region
 
       * Concurrently run a region inside another region using 'forkTopRegion'.
 
-       * Duplicate a 'RegionalPtr' to a parent region using 'dup'.
+      * Duplicate a 'RegionalPtr' to a parent region using 'dup'.
       -}
     , module Control.Monad.Trans.Region
 
@@ -43,25 +43,25 @@ module Foreign.Ptr.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Control.Monad                    ( return, (>>=), fail )
-import Data.Function                    ( ($) )
-import Data.Int                         ( Int )
-import Data.Maybe                       ( Maybe(Nothing, Just) )
-import           Foreign.Ptr            ( Ptr )
-import qualified Foreign.Ptr as FP      ( nullPtr
-                                        , castPtr, plusPtr, alignPtr, minusPtr
-                                        )
+import Control.Monad                     ( return, (>>=), fail )
+import Data.Function                     ( ($) )
+import Data.Int                          ( Int )
+import Data.Maybe                        ( Maybe(Nothing, Just) )
+import           Foreign.Ptr             ( Ptr )
+import qualified Foreign.Ptr as FP       ( nullPtr
+                                         , castPtr, plusPtr, alignPtr, minusPtr
+                                         )
 
 -- from transformers:
-import Control.Monad.IO.Class           ( MonadIO )
+import Control.Monad.IO.Class            ( MonadIO )
 
 -- from regions:
-import Control.Monad.Trans.Region    -- (re-exported entirely)
-import Control.Monad.Trans.Region.Close ( CloseAction, onExit )
+import Control.Monad.Trans.Region     -- (re-exported entirely)
+import Control.Monad.Trans.Region.OnExit ( CloseAction, onExit )
 
 -- from ourselves:
-import Foreign.Ptr.Region.Internal      ( RegionalPtr(RegionalPtr) )
-import Foreign.Ptr.Region.Unsafe        ( unsafePtr )
+import Foreign.Ptr.Region.Internal       ( RegionalPtr(RegionalPtr) )
+import Foreign.Ptr.Region.Unsafe         ( unsafePtr )
 
 
 --------------------------------------------------------------------------------
