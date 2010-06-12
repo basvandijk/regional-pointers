@@ -46,6 +46,4 @@ Library
                    Foreign.Marshal.Utils.Region
                    Foreign.Storable.Region
                    Foreign.C.String.Region
-                   -- TODO: Foreign.StablePtr.Region
-                   -- TODO: Foreign.Marshal.Pool.Region
   other-modules:   Foreign.Ptr.Region.Internal
