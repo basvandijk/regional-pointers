@@ -13,7 +13,7 @@
 -------------------------------------------------------------------------------
 
 module Foreign.Ptr.Region.Internal
-    ( -- * Memory as a scarce resource
+    ( -- * Regional pointers
       RegionalPtr(RegionalPtr)
 
       -- * Utility functions for lifting operations on Ptrs to RegionalPtrs
@@ -27,8 +27,9 @@ module Foreign.Ptr.Region.Internal
 --------------------------------------------------------------------------------
 
 -- from base:
-import Control.Monad ( liftM )
+import Control.Monad ( return, (>>=), fail )
 import Data.Function ( ($) )
+import Data.Maybe    ( Maybe(Nothing, Just) )
 import System.IO     ( IO )
 import Foreign.Ptr   ( Ptr )
 
@@ -39,20 +40,23 @@ import Control.Monad.IO.Class ( MonadIO, liftIO )
 import Control.Monad.Trans.Region.Close ( CloseHandle )
 import Control.Monad.Trans.Region       ( Dup(dup) )
 
+
 --------------------------------------------------------------------------------
--- Memory as a scarce resource
+-- * Regional pointers
 --------------------------------------------------------------------------------
 
 -- | A regional handle to memory. This should provide a safer replacement for
 -- @Foreign.Ptr.'Ptr'@
-data RegionalPtr α (r ∷ * → *) = RegionalPtr (Ptr α) (CloseHandle r)
+data RegionalPtr α (r ∷ * → *) = RegionalPtr (Ptr α) (Maybe (CloseHandle r))
 
 instance Dup (RegionalPtr α) where
-    dup (RegionalPtr ptr ch) = liftM (RegionalPtr ptr) $ dup ch
+    dup (RegionalPtr ptr Nothing)   = return $ RegionalPtr ptr Nothing
+    dup (RegionalPtr ptr (Just ch)) = do ch' ← dup ch
+                                         return $ RegionalPtr ptr $ Just ch'
 
 
 --------------------------------------------------------------------------------
--- Utility functions for lifting operations on Ptrs to RegionalPtrs
+-- * Utility functions for lifting operations on Ptrs to RegionalPtrs
 --------------------------------------------------------------------------------
 
 unsafePtr ∷ RegionalPtr α r → Ptr α

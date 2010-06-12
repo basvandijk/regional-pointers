@@ -32,12 +32,12 @@ module Foreign.Marshal.Alloc.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Control.Monad              ( return, (>>=), fail )
-import Data.Function              ( ($) )
-import Data.Int                   ( Int )
-import Foreign.Storable           ( Storable, sizeOf )
+import Control.Monad                          ( (>>=), fail )
+import Data.Function                          ( ($) )
+import Data.Int                               ( Int )
+import Foreign.Storable                       ( Storable, sizeOf )
 
-import Foreign.Marshal.Alloc      ( free )
+import Foreign.Marshal.Alloc                  ( free )
 
 import qualified Foreign.Marshal.Alloc as FMA ( mallocBytes )
 
@@ -46,20 +46,19 @@ import qualified Foreign.Marshal.Alloc as FMA ( alloca, allocaBytes, malloc )
 #endif
 
 -- from base-unicode-symbols:
-import Prelude.Unicode            ( (⊥) )
+import Prelude.Unicode                        ( (⊥) )
 
 -- from transformers:
-import Control.Monad.IO.Class     ( liftIO )
+import Control.Monad.IO.Class                 ( liftIO )
 
 -- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO      ( MonadCatchIO, block )
+import Control.Monad.CatchIO                  ( MonadCatchIO, block )
 
 -- from regions:
-import Control.Monad.Trans.Region       ( RegionT, runRegionT )
-import Control.Monad.Trans.Region.Close ( onExit )
+import Control.Monad.Trans.Region             ( RegionT, runRegionT )
 
 -- from ourselves:
-import Foreign.Ptr.Region.Internal ( RegionalPtr(RegionalPtr) )
+import Foreign.Ptr.Region                     ( RegionalPtr, regionalPtr )
 
 
 --------------------------------------------------------------------------------
@@ -112,8 +111,7 @@ malloc ∷ ∀ α pr s. (Storable α, MonadCatchIO pr)
        ⇒ RegionT s pr (RegionalPtr α (RegionT s pr))
 malloc = mallocBytes $ sizeOf ((⊥) ∷ α)
 
-{-| Allocates the given number of bytes and returns a
-regional pointer to them.
+{-| Allocates the given number of bytes and returns a regional pointer to them.
 
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.mallocBytes'@.
@@ -123,8 +121,7 @@ mallocBytes ∷ MonadCatchIO pr
             → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocBytes size = block $ do
                      ptr ← liftIO $ FMA.mallocBytes size
-                     ch ← onExit $ free ptr
-                     return $ RegionalPtr ptr ch
+                     regionalPtr ptr $ free ptr
 
 -- TODO:
 -- realloc ∷ (Storable β, pr `ParentOf` cr, MonadIO cr)
