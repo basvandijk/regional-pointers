@@ -118,7 +118,7 @@ alignPtr rp n = mapRegionalPtr (\p → FP.alignPtr p n) rp
 -- > p2 == p1 `plusPtr` (p2 `minusPtr` p1)
 --
 -- Wraps: @Foreign.Ptr.@'FP.minusPtr'
-minusPtr ∷ RegionalPtr α r → RegionalPtr β r → Int
+minusPtr ∷ RegionalPtr α r1 → RegionalPtr β r2 → Int
 minusPtr rp1 rp2 = FP.minusPtr (unsafePtr rp1) (unsafePtr rp2)
 
 
