@@ -50,6 +50,7 @@ import qualified Foreign.Marshal.Utils as FMU ( fromBool,  toBool
 import Foreign.Storable                       ( Storable )
 
 #ifdef __HADDOCK__
+import qualified Foreign.Marshal.Utils as FMU ( with, new )
 import Foreign.Storable                       ( sizeOf )
 #endif
 
@@ -84,6 +85,8 @@ import Foreign.Storable.Region                ( poke )
 --
 -- The memory is freed when @f@ terminates (either normally or via an
 -- exception).
+--
+-- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.with'@.
 with ∷ (Storable α, MonadCatchIO pr)
      ⇒ α → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β) → pr β
 with val f = alloca $ \ptr → poke ptr val >> f ptr
@@ -91,6 +94,8 @@ with val f = alloca $ \ptr → poke ptr val >> f ptr
 -- | Allocate a block of memory and marshal a value into it (the combination of
 -- 'malloc' and 'poke').  The size of the area allocated is determined by the
 -- 'sizeOf' method from the instance of 'Storable' for the appropriate type.
+--
+-- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.new'@.
 new ∷ (Storable α, MonadCatchIO pr)
     ⇒ α → RegionT s pr (RegionalPtr α (RegionT s pr))
 new val = do ptr ← malloc

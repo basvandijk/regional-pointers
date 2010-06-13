@@ -79,6 +79,10 @@ regionalPtr ptr freePtr = do ch ← onExit freePtr
 
 -- | The constant @nullPtr@ contains a distinguished value of 'RegionalPtr'
 -- that is not associated with a valid memory location.
+--
+-- Note that @nullPtr@ is a pure value. This means it does not perform the
+-- side-effect of registering a 'CloseAction' like @free nullPtr@ in the
+-- 'RegionT' monad.
 nullPtr ∷ RegionalPtr α r
 nullPtr = RegionalPtr FP.nullPtr Nothing
 
