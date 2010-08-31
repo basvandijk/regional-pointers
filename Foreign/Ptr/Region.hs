@@ -18,7 +18,7 @@ module Foreign.Ptr.Region
 
       * Run a region using 'runRegionT'.
 
-      * Concurrently run a region inside another region using 'forkTopRegion'.
+      * Concurrently run a region inside another region using 'forkIOTopRegion'.
 
       * Duplicate a 'RegionalPtr' to a parent region using 'dup'.
       -}
