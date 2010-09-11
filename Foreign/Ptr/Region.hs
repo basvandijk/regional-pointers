@@ -87,7 +87,7 @@ castPtr = mapRegionalPtr FP.castPtr
 --
 -- Wraps: @Foreign.Ptr.@'FP.plusPtr'
 plusPtr ∷ RegionalPtr α r → Int → RegionalPtr β r
-plusPtr rp n = mapRegionalPtr (\p → FP.plusPtr p n) rp
+plusPtr rPtr n = mapRegionalPtr (\ptr → FP.plusPtr ptr n) rPtr
 
 -- | Given an arbitrary address and an alignment constraint, @alignPtr@ yields
 -- the next higher address that fulfills the alignment constraint. An alignment
@@ -96,7 +96,7 @@ plusPtr rp n = mapRegionalPtr (\p → FP.plusPtr p n) rp
 --
 -- Wraps: @Foreign.Ptr.@'FP.alignPtr'
 alignPtr ∷ RegionalPtr α r → Int → RegionalPtr α r
-alignPtr rp n = mapRegionalPtr (\p → FP.alignPtr p n) rp
+alignPtr rPtr n = mapRegionalPtr (\ptr → FP.alignPtr ptr n) rPtr
 
 -- | Computes the offset required to get from the second to the first
 -- argument. We have
@@ -105,7 +105,7 @@ alignPtr rp n = mapRegionalPtr (\p → FP.alignPtr p n) rp
 --
 -- Wraps: @Foreign.Ptr.@'FP.minusPtr'
 minusPtr ∷ RegionalPtr α r1 → RegionalPtr β r2 → Int
-minusPtr rp1 rp2 = FP.minusPtr (unsafePtr rp1) (unsafePtr rp2)
+minusPtr rPtr1 rPtr2 = FP.minusPtr (unsafePtr rPtr1) (unsafePtr rPtr2)
 
 
 -- The End ---------------------------------------------------------------------

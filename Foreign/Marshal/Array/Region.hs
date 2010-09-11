@@ -264,7 +264,7 @@ copyArray ∷ ( Storable α
           → RegionalPtr α pr2 -- ^ Source
           → Int               -- ^ Number of /elements/ to copy.
           → cr ()
-copyArray rp1 rp2 = liftIO ∘ FMA.copyArray (unsafePtr rp1) (unsafePtr rp2)
+copyArray rPtr1 rPtr2 = liftIO ∘ FMA.copyArray (unsafePtr rPtr1) (unsafePtr rPtr2)
 
 -- | Copy the given number of elements from the second array (source) into the
 -- first array (destination); the copied areas /may/ overlap.
@@ -279,7 +279,7 @@ moveArray ∷ ( Storable α
           → RegionalPtr α pr1 -- ^ Source
           → Int               -- ^ Number of /elements/ to move.
           → cr ()
-moveArray rp1 rp2 = liftIO ∘ FMA.moveArray (unsafePtr rp1) (unsafePtr rp2)
+moveArray rPtr1 rPtr2 = liftIO ∘ FMA.moveArray (unsafePtr rPtr1) (unsafePtr rPtr2)
 
 
 --------------------------------------------------------------------------------

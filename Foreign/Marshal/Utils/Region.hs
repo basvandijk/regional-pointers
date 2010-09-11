@@ -126,7 +126,7 @@ copyBytes ∷ ( pr1 `ParentOf` cr
           → RegionalPtr α pr2 -- ^ Source
           → Int               -- ^ Number of bytes to copy
           → cr ()
-copyBytes rp1 rp2 = liftIO ∘ FMU.copyBytes (unsafePtr rp1) (unsafePtr rp2)
+copyBytes rPtr1 rPtr2 = liftIO ∘ FMU.copyBytes (unsafePtr rPtr1) (unsafePtr rPtr2)
 
 -- | Copies the given number of bytes from the second area (source) into the
 -- first (destination); the copied areas /may/ overlap
@@ -140,7 +140,7 @@ moveBytes ∷ ( pr1 `ParentOf` cr
           → RegionalPtr α pr2 -- ^ Source
           → Int               -- ^ Number of bytes to move
           → cr ()
-moveBytes rp1 rp2 = liftIO ∘ FMU.moveBytes (unsafePtr rp1) (unsafePtr rp2)
+moveBytes rPtr1 rPtr2 = liftIO ∘ FMU.moveBytes (unsafePtr rPtr1) (unsafePtr rPtr2)
 
 
 -- The End ---------------------------------------------------------------------

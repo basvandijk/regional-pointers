@@ -95,17 +95,17 @@ unsafePtr (RegionalPtr ptr _) = ptr
 unsafeWrap ∷ MonadIO m
            ⇒ (Ptr α → IO β)
            → (RegionalPtr α r → m β)
-unsafeWrap f rp = liftIO $ f $ unsafePtr rp
+unsafeWrap f rPtr = liftIO $ f (unsafePtr rPtr)
 
 unsafeWrap2 ∷ MonadIO m
             ⇒ (Ptr α → γ → IO β)
             → (RegionalPtr α r → γ → m β)
-unsafeWrap2 f rp x = liftIO $ f (unsafePtr rp) x
+unsafeWrap2 f rPtr x = liftIO $ f (unsafePtr rPtr) x
 
 unsafeWrap3 ∷ MonadIO m
             ⇒ (Ptr α → γ → δ → IO β)
             → (RegionalPtr α r → γ → δ → m β)
-unsafeWrap3 f rp x y = liftIO $ f (unsafePtr rp) x y
+unsafeWrap3 f rPtr x y = liftIO $ f (unsafePtr rPtr) x y
 
 
 -- The End ---------------------------------------------------------------------

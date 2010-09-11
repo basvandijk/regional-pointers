@@ -255,7 +255,7 @@ withCAStringLen ∷ MonadCatchIO pr
                 → (∀ s. RegionalCStringLen (RegionT s pr) → RegionT s pr α)
                 → pr α
 withCAStringLen str f = withArrayLen (charsToCChars str)
-                      $ \len ptr → f (ptr, len)
+                      $ \len rPtr → f (rPtr, len)
 
 
 --------------------------------------------------------------------------------
@@ -335,7 +335,7 @@ withCWStringLen ∷ MonadCatchIO pr
                 → (∀ s. RegionalCWStringLen (RegionT s pr) → RegionT s pr α)
                 → pr α
 withCWStringLen str f = withArrayLen (charsToCWchars str)
-                      $ \len ptr → f (ptr, len)
+                      $ \len rPtr → f (rPtr, len)
 
 
 --------------------------------------------------------------------------------
@@ -352,8 +352,8 @@ wNUL = 0
 newArrayLen ∷ (Storable α, MonadCatchIO pr)
             ⇒ [α] → RegionT s pr (RegionalPtr α (RegionT s pr), Int)
 newArrayLen xs = do
-  a <- newArray xs
-  return (a, length xs)
+  rPtr ← newArray xs
+  return (rPtr, length xs)
 
 charsToCChars ∷ [Char] → [CChar]
 charsToCChars = map FCS.castCharToCChar
