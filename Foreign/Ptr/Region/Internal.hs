@@ -16,7 +16,11 @@ module Foreign.Ptr.Region.Internal
     ( -- * Regional pointers
       RegionalPtr(RegionalPtr)
 
-      -- * Utility functions for lifting operations on Ptrs to RegionalPtrs
+      -- * Unsafely constructing regional pointers
+    , unsafeRegionalPtr
+    , unsafePureRegionalPtr
+
+      -- * Unsafe utility functions for lifting operations on @Ptrs@ to @RegionalPtrs@
     , unsafePtr
     , unsafeWrap, unsafeWrap2, unsafeWrap3
     ) where
@@ -37,8 +41,8 @@ import Foreign.Ptr   ( Ptr )
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 -- from regions:
-import Control.Monad.Trans.Region.OnExit ( CloseHandle )
-import Control.Monad.Trans.Region        ( Dup(dup) )
+import Control.Monad.Trans.Region.OnExit ( CloseHandle, CloseAction, onExit )
+import Control.Monad.Trans.Region        ( RegionT, Dup(dup) )
 
 
 --------------------------------------------------------------------------------
@@ -53,6 +57,32 @@ instance Dup (RegionalPtr α) where
     dup (RegionalPtr ptr Nothing)   = return $ RegionalPtr ptr Nothing
     dup (RegionalPtr ptr (Just ch)) = do ch' ← dup ch
                                          return $ RegionalPtr ptr $ Just ch'
+
+--------------------------------------------------------------------------------
+-- * Constructing regional pointers
+--------------------------------------------------------------------------------
+
+-- | Construct a regional pointer from a native pointer
+-- and an @IO@ computation that finalizes the pointer (like @free ptr@)
+-- which is executed when the region exits.
+--
+-- This function is considered unsafe because this library can't guarantee that
+-- the finalizer will actually finalize the pointer (suppose having @return ()@
+-- as the finalizer). You have to verify the correct finalisation yourself.
+unsafeRegionalPtr ∷ MonadIO pr
+                  ⇒ Ptr α
+                  → CloseAction
+                  → RegionT s pr (RegionalPtr α (RegionT s pr))
+unsafeRegionalPtr ptr finalize = do ch ← onExit finalize
+                                    return $ RegionalPtr ptr $ Just ch
+
+-- | Construct a regional pointer from a native pointer
+-- without registering a finalizer like @free ptr@.
+--
+-- This function is considered unsafe because this library can't guarantee the
+-- finalisation of the pointer, you have to do that yourself.
+unsafePureRegionalPtr ∷ Ptr α → RegionalPtr α r
+unsafePureRegionalPtr ptr = RegionalPtr ptr Nothing
 
 
 --------------------------------------------------------------------------------

@@ -58,7 +58,8 @@ import Control.Monad.CatchIO                  ( MonadCatchIO, block )
 import Control.Monad.Trans.Region             ( RegionT, runRegionT )
 
 -- from ourselves:
-import Foreign.Ptr.Region                     ( RegionalPtr, regionalPtr )
+import Foreign.Ptr.Region                     ( RegionalPtr  )
+import Foreign.Ptr.Region.Unsafe              ( unsafeRegionalPtr )
 
 
 --------------------------------------------------------------------------------
@@ -121,7 +122,7 @@ mallocBytes ∷ MonadCatchIO pr
             → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocBytes size = block $ do
                      ptr ← liftIO $ FMA.mallocBytes size
-                     regionalPtr ptr $ free ptr
+                     unsafeRegionalPtr ptr $ free ptr
 
 -- TODO:
 -- realloc ∷ (Storable β, pr `ParentOf` cr, MonadIO cr)

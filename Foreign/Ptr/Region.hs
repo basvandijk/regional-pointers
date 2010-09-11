@@ -13,6 +13,8 @@ module Foreign.Ptr.Region
     ( -- * Regional pointers
       RegionalPtr
 
+    , nullPtr
+
       {-| Note that this module re-exports the @Control.Monad.Trans.Region@
       module from the @regions@ package which allows you to:
 
@@ -23,10 +25,6 @@ module Foreign.Ptr.Region
       * Duplicate a 'RegionalPtr' to a parent region using 'dup'.
       -}
     , module Control.Monad.Trans.Region
-
-      -- * Constructing regional pointers
-    , regionalPtr
-    , nullPtr
 
       -- *  Pure functions on regional pointers
     , mapRegionalPtr
@@ -43,48 +41,32 @@ module Foreign.Ptr.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Control.Monad                     ( return, (>>=), fail )
-import Data.Function                     ( ($) )
-import Data.Int                          ( Int )
-import Data.Maybe                        ( Maybe(Nothing, Just) )
-import           Foreign.Ptr             ( Ptr )
-import qualified Foreign.Ptr as FP       ( nullPtr
-                                         , castPtr, plusPtr, alignPtr, minusPtr
-                                         )
+import Data.Int ( Int )
 
--- from transformers:
-import Control.Monad.IO.Class            ( MonadIO )
-
+import           Foreign.Ptr       ( Ptr )
+import qualified Foreign.Ptr as FP ( nullPtr
+                                   , castPtr, plusPtr, alignPtr, minusPtr
+                                   )
 -- from regions:
-import Control.Monad.Trans.Region     -- (re-exported entirely)
-import Control.Monad.Trans.Region.OnExit ( CloseAction, onExit )
+import Control.Monad.Trans.Region -- (re-exported entirely)
 
 -- from ourselves:
-import Foreign.Ptr.Region.Internal       ( RegionalPtr(RegionalPtr) )
-import Foreign.Ptr.Region.Unsafe         ( unsafePtr )
+import Foreign.Ptr.Region.Internal ( RegionalPtr(RegionalPtr) )
+import Foreign.Ptr.Region.Unsafe   ( unsafePureRegionalPtr, unsafePtr )
 
 
 --------------------------------------------------------------------------------
--- * Constructing regional pointers
+-- * Regional pointers
 --------------------------------------------------------------------------------
-
--- | Construct a regional pointer from a native pointer and an @IO@ computation
--- that frees the pointer which is executed when the region exits.
-regionalPtr ∷ MonadIO pr
-            ⇒ Ptr α
-            → CloseAction
-            → RegionT s pr (RegionalPtr α (RegionT s pr))
-regionalPtr ptr freePtr = do ch ← onExit freePtr
-                             return $ RegionalPtr ptr $ Just ch
 
 -- | The constant @nullPtr@ contains a distinguished value of 'RegionalPtr'
 -- that is not associated with a valid memory location.
 --
 -- Note that @nullPtr@ is a pure value. This means it does not perform the
--- side-effect of registering a 'CloseAction' like @free nullPtr@ in the
--- 'RegionT' monad.
+-- side-effect of registering a finalizer like @free nullPtr@
+-- in the 'RegionT' monad.
 nullPtr ∷ RegionalPtr α r
-nullPtr = RegionalPtr FP.nullPtr Nothing
+nullPtr = unsafePureRegionalPtr FP.nullPtr
 
 
 --------------------------------------------------------------------------------
