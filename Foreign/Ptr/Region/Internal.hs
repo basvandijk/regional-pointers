@@ -66,11 +66,11 @@ instance Dup (RegionalPtr α) where
 
 -- | Construct a regional pointer from a native pointer
 -- and an @IO@ computation that finalizes the pointer (like @free ptr@)
--- which is executed when the region exits.
+-- which is performed when the region terminates.
 --
--- This function is considered unsafe because this library can't guarantee that
--- the finalizer will actually finalize the pointer (suppose having @return ()@
--- as the finalizer). You have to verify the correct finalisation yourself.
+-- This function is unsafe because this library can't guarantee that the
+-- finalizer will actually finalize the pointer (suppose having @return ()@ as
+-- the finalizer). You have to verify the correct finalisation yourself.
 unsafeRegionalPtr ∷ MonadIO pr
                   ⇒ Ptr α
                   → Finalizer
@@ -80,8 +80,8 @@ unsafeRegionalPtr ptr finalize = liftM (RegionalPtr ptr ∘ Just) $ onExit final
 -- | Construct a regional pointer from a native pointer
 -- without registering a finalizer like @free ptr@.
 --
--- This function is considered unsafe because this library can't guarantee the
--- finalisation of the pointer, you have to do that yourself.
+-- This function is unsafe because this library can't guarantee the finalisation
+-- of the pointer, you have to verify the correct finalisation yourself.
 unsafePureRegionalPtr ∷ Ptr α → RegionalPtr α r
 unsafePureRegionalPtr ptr = RegionalPtr ptr Nothing
 
@@ -90,6 +90,11 @@ unsafePureRegionalPtr ptr = RegionalPtr ptr Nothing
 -- * Utility functions for lifting operations on Ptrs to RegionalPtrs
 --------------------------------------------------------------------------------
 
+-- | Retrieve the native pointer from a regional pointer.
+--
+-- This function is unsafe because it both allows you to @free@ the pointer
+-- before the region terminates and use the pointer outside the region when it
+-- is already freed.
 unsafePtr ∷ RegionalPtr α r → Ptr α
 unsafePtr (RegionalPtr ptr _) = ptr
 
