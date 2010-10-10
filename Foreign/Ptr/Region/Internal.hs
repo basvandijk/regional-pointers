@@ -31,17 +31,20 @@ module Foreign.Ptr.Region.Internal
 --------------------------------------------------------------------------------
 
 -- from base:
-import Control.Monad ( return, (>>=), fail )
+import Control.Monad ( return, liftM )
 import Data.Function ( ($) )
 import Data.Maybe    ( Maybe(Nothing, Just) )
 import System.IO     ( IO )
 import Foreign.Ptr   ( Ptr )
 
+-- from base-unicode-symbols:
+import Data.Function.Unicode ( (∘) )
+
 -- from transformers:
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 -- from regions:
-import Control.Monad.Trans.Region.OnExit ( CloseHandle, CloseAction, onExit )
+import Control.Monad.Trans.Region.OnExit ( FinalizerHandle, Finalizer, onExit )
 import Control.Monad.Trans.Region        ( RegionT, Dup(dup) )
 
 
@@ -51,12 +54,11 @@ import Control.Monad.Trans.Region        ( RegionT, Dup(dup) )
 
 -- | A regional handle to memory. This should provide a safer replacement for
 -- @Foreign.Ptr.'Ptr'@
-data RegionalPtr α (r ∷ * → *) = RegionalPtr !(Ptr α) !(Maybe (CloseHandle r))
+data RegionalPtr α (r ∷ * → *) = RegionalPtr !(Ptr α) !(Maybe (FinalizerHandle r))
 
 instance Dup (RegionalPtr α) where
     dup (RegionalPtr ptr Nothing)   = return $ RegionalPtr ptr Nothing
-    dup (RegionalPtr ptr (Just ch)) = do ch' ← dup ch
-                                         return $ RegionalPtr ptr $ Just ch'
+    dup (RegionalPtr ptr (Just ch)) = liftM (RegionalPtr ptr ∘ Just) $ dup ch
 
 --------------------------------------------------------------------------------
 -- * Constructing regional pointers
@@ -71,10 +73,9 @@ instance Dup (RegionalPtr α) where
 -- as the finalizer). You have to verify the correct finalisation yourself.
 unsafeRegionalPtr ∷ MonadIO pr
                   ⇒ Ptr α
-                  → CloseAction
+                  → Finalizer
                   → RegionT s pr (RegionalPtr α (RegionT s pr))
-unsafeRegionalPtr ptr finalize = do ch ← onExit finalize
-                                    return $ RegionalPtr ptr $ Just ch
+unsafeRegionalPtr ptr finalize = liftM (RegionalPtr ptr ∘ Just) $ onExit finalize
 
 -- | Construct a regional pointer from a native pointer
 -- without registering a finalizer like @free ptr@.
