@@ -34,7 +34,7 @@ import qualified Foreign.Storable as FS ( peekElemOff, pokeElemOff
 import Control.Monad.IO.Class           ( MonadIO )
 
 -- from regions:
-import Control.Monad.Trans.Region       ( ParentOf )
+import Control.Monad.Trans.Region       ( AncestorRegion )
 
 -- from ourselves:
 import Foreign.Ptr.Region               ( RegionalPtr )
@@ -57,7 +57,7 @@ import Foreign.Ptr.Region.Unsafe        ( unsafeWrap, unsafeWrap2, unsafeWrap3 )
 -- implementation of the function.
 --
 -- Wraps: @Foreign.Storable.'FS.peekElemOff'@.
-peekElemOff ∷ (pr `ParentOf` cr, Storable α, MonadIO cr)
+peekElemOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
             ⇒ RegionalPtr α pr → Int → cr α
 peekElemOff = unsafeWrap2 FS.peekElemOff
 
@@ -68,7 +68,7 @@ peekElemOff = unsafeWrap2 FS.peekElemOff
 -- >   poke (addr `plusPtr` (idx * sizeOf x)) x
 --
 -- Wraps: @Foreign.Storable.'FS.pokeElemOff'@.
-pokeElemOff ∷ (pr `ParentOf` cr, Storable α, MonadIO cr)
+pokeElemOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
             ⇒ RegionalPtr α pr → Int → α → cr ()
 pokeElemOff = unsafeWrap3 FS.pokeElemOff
 
@@ -78,7 +78,7 @@ pokeElemOff = unsafeWrap3 FS.pokeElemOff
 -- > peekByteOff addr off = peek (addr `plusPtr` off)
 --
 -- Wraps: @Foreign.Storable.'FS.peekByteOff'@.
-peekByteOff ∷ (pr `ParentOf` cr, Storable α, MonadIO cr)
+peekByteOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
             ⇒ RegionalPtr β pr → Int → cr α
 peekByteOff = unsafeWrap2 FS.peekByteOff
 
@@ -88,7 +88,7 @@ peekByteOff = unsafeWrap2 FS.peekByteOff
 -- > pokeByteOff addr off x = poke (addr `plusPtr` off) x
 --
 -- Wraps: @Foreign.Storable.'FS.pokeByteOff'@.
-pokeByteOff ∷ (pr `ParentOf` cr, Storable α, MonadIO cr)
+pokeByteOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
             ⇒ RegionalPtr β pr → Int → α → cr ()
 pokeByteOff = unsafeWrap3 FS.pokeByteOff
 
@@ -101,7 +101,7 @@ pokeByteOff = unsafeWrap3 FS.pokeByteOff
 -- is fulfilled.
 --
 -- Wraps: @Foreign.Storable.'FS.peek'@.
-peek ∷ (pr `ParentOf` cr, Storable α, MonadIO cr)
+peek ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
      ⇒ RegionalPtr α pr → cr α
 peek = unsafeWrap FS.peek
 
@@ -109,7 +109,7 @@ peek = unsafeWrap FS.peek
 -- might apply; see 'peek'.
 --
 -- Wraps: @Foreign.Storable.'FS.poke'@.
-poke ∷ (pr `ParentOf` cr, Storable α, MonadIO cr)
+poke ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
      ⇒ RegionalPtr α pr → α → cr ()
 poke = unsafeWrap2 FS.poke
 

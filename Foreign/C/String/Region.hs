@@ -96,7 +96,7 @@ import Control.Monad.IO.Class            ( MonadIO, liftIO )
 import Control.Monad.CatchIO             ( MonadCatchIO )
 
 -- from regions:
-import Control.Monad.Trans.Region        ( RegionT, ParentOf )
+import Control.Monad.Trans.Region        ( RegionT, AncestorRegion )
 
 -- from ourselves:
 import Foreign.Marshal.Array.Region      ( newArray0, newArray
@@ -131,14 +131,14 @@ type RegionalCStringLen r = (RegionalPtr CChar r, Int)
 -- | Marshal a NUL terminated C string into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCString'@
-peekCString ∷ (pr `ParentOf` cr, MonadIO cr)
+peekCString ∷ (pr `AncestorRegion` cr, MonadIO cr)
              ⇒ RegionalCString pr → cr String
 peekCString = peekCAString
 
 -- | Marshal a C string with explicit length into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCStringLen'@.
-peekCStringLen ∷ (pr `ParentOf` cr, MonadIO cr)
+peekCStringLen ∷ (pr `AncestorRegion` cr, MonadIO cr)
                ⇒ RegionalCStringLen pr → cr String
 peekCStringLen = peekCAStringLen
 
@@ -200,14 +200,14 @@ charIsRepresentable = liftIO ∘ FCS.charIsRepresentable
 -- | Marshal a NUL terminated C string into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCAString'@.
-peekCAString ∷ (pr `ParentOf` cr, MonadIO cr)
+peekCAString ∷ (pr `AncestorRegion` cr, MonadIO cr)
              ⇒ RegionalCString pr → cr String
 peekCAString = unsafeWrap FCS.peekCAString
 
 -- | Marshal a C string with explicit length into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCAStringLen'@.
-peekCAStringLen ∷ (pr `ParentOf` cr, MonadIO cr)
+peekCAStringLen ∷ (pr `AncestorRegion` cr, MonadIO cr)
                 ⇒ RegionalCStringLen pr → cr String
 peekCAStringLen = liftIO ∘ FCS.peekCAStringLen ∘ first unsafePtr
 
@@ -278,14 +278,14 @@ type RegionalCWStringLen r = (RegionalPtr CWchar r, Int)
 -- | Marshal a NUL terminated C wide string into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCWString'@.
-peekCWString ∷ (pr `ParentOf` cr, MonadIO cr)
+peekCWString ∷ (pr `AncestorRegion` cr, MonadIO cr)
              ⇒ RegionalCWString pr → cr String
 peekCWString = unsafeWrap FCS.peekCWString
 
 -- | Marshal a C wide string with explicit length into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCWStringLen'@.
-peekCWStringLen ∷ (pr `ParentOf` cr, MonadIO cr)
+peekCWStringLen ∷ (pr `AncestorRegion` cr, MonadIO cr)
                 ⇒ RegionalCWStringLen pr → cr String
 peekCWStringLen = liftIO ∘ FCS.peekCWStringLen ∘ first unsafePtr
 

@@ -83,7 +83,7 @@ import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 import Control.Monad.CatchIO                  ( MonadCatchIO )
 
 -- from regions:
-import Control.Monad.Trans.Region             ( RegionT , ParentOf )
+import Control.Monad.Trans.Region             ( RegionT , AncestorRegion )
 
 -- from ourselves:
 import Foreign.Ptr.Region                     ( RegionalPtr, mapRegionalPtr )
@@ -150,21 +150,21 @@ unsafeWrap2flp = flip ∘ unsafeWrap2 ∘ flip
 -- linear stack space.)
 --
 -- Wraps: @Foreign.Marshal.Array.'FMA.peekArray'@.
-peekArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
+peekArray ∷ (Storable α, pr `AncestorRegion` cr, MonadIO cr)
           ⇒ Int → RegionalPtr α pr → cr [α]
 peekArray =  unsafeWrap2flp FMA.peekArray
 
 -- | Convert an array terminated by the given end marker into a Haskell list.
 --
 -- Wraps: @Foreign.Marshal.Array.'FMA.peekArray0'@.
-peekArray0 ∷ (Storable α, Eq α, pr `ParentOf` cr, MonadIO cr)
+peekArray0 ∷ (Storable α, Eq α, pr `AncestorRegion` cr, MonadIO cr)
            ⇒ α → RegionalPtr α pr → cr [α]
 peekArray0 = unsafeWrap2flp FMA.peekArray0
 
 -- | Write the list elements consecutive into memory.
 --
 -- Wraps: @Foreign.Marshal.Array.'FMA.pokeArray'@.
-pokeArray ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
+pokeArray ∷ (Storable α, pr `AncestorRegion` cr, MonadIO cr)
           ⇒ RegionalPtr α pr → [α] → cr ()
 pokeArray = unsafeWrap2 FMA.pokeArray
 
@@ -172,7 +172,7 @@ pokeArray = unsafeWrap2 FMA.pokeArray
 -- given marker element.
 --
 -- Wraps: @Foreign.Marshal.Array.'FMA.pokeArray0'@.
-pokeArray0 ∷ (Storable α, pr `ParentOf` cr, MonadIO cr)
+pokeArray0 ∷ (Storable α, pr `AncestorRegion` cr, MonadIO cr)
            ⇒ α → RegionalPtr α pr → [α] → cr ()
 pokeArray0 m rp xs = liftIO $ FMA.pokeArray0 m (unsafePtr rp) xs
 
@@ -256,8 +256,8 @@ withArrayLen0 marker vals f =
 --
 -- Wraps: @Foreign.Marshal.Array.'FMA.copyArray'@.
 copyArray ∷ ( Storable α
-            , pr1 `ParentOf` cr
-            , pr2 `ParentOf` cr
+            , pr1 `AncestorRegion` cr
+            , pr2 `AncestorRegion` cr
             , MonadIO cr
             )
           ⇒ RegionalPtr α pr1 -- ^ Destination
@@ -271,8 +271,8 @@ copyArray rPtr1 rPtr2 = liftIO ∘ FMA.copyArray (unsafePtr rPtr1) (unsafePtr rP
 --
 -- Wraps: @Foreign.Marshal.Array.'FMA.moveArray'@.
 moveArray ∷ ( Storable α
-            , pr1 `ParentOf` cr
-            , pr2 `ParentOf` cr
+            , pr1 `AncestorRegion` cr
+            , pr2 `AncestorRegion` cr
             , MonadIO cr
             )
           ⇒ RegionalPtr α pr1 -- ^ Destination
@@ -289,7 +289,7 @@ moveArray rPtr1 rPtr2 = liftIO ∘ FMA.moveArray (unsafePtr rPtr1) (unsafePtr rP
 -- | Return the number of elements in an array, excluding the terminator.
 --
 -- Wraps: @Foreign.Marshal.Array.'FMA.lengthArray0'@.
-lengthArray0 ∷ (Storable α, Eq α, pr `ParentOf` cr, MonadIO cr)
+lengthArray0 ∷ (Storable α, Eq α, pr `AncestorRegion` cr, MonadIO cr)
              ⇒ α → RegionalPtr α pr → cr Int
 lengthArray0 = unsafeWrap2flp FMA.lengthArray0
 

@@ -64,7 +64,7 @@ import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 import Control.Monad.CatchIO                  ( MonadCatchIO )
 
 -- from regions:
-import Control.Monad.Trans.Region             ( RegionT, ParentOf )
+import Control.Monad.Trans.Region             ( RegionT, AncestorRegion )
 
 -- from ourselves:
 import Foreign.Ptr.Region                     ( RegionalPtr )
@@ -118,8 +118,8 @@ new val = do ptr ← malloc
 -- first (destination); the copied areas may /not/ overlap
 --
 -- Wraps: @Foreign.Marshal.Utils.'FMU.copyBytes'@.
-copyBytes ∷ ( pr1 `ParentOf` cr
-            , pr2 `ParentOf` cr
+copyBytes ∷ ( pr1 `AncestorRegion` cr
+            , pr2 `AncestorRegion` cr
             , MonadIO cr
             )
           ⇒ RegionalPtr α pr1 -- ^ Destination
@@ -132,8 +132,8 @@ copyBytes rPtr1 rPtr2 = liftIO ∘ FMU.copyBytes (unsafePtr rPtr1) (unsafePtr rP
 -- first (destination); the copied areas /may/ overlap
 --
 -- Wraps: @Foreign.Marshal.Utils.'FMU.moveBytes'@.
-moveBytes ∷ ( pr1 `ParentOf` cr
-            , pr2 `ParentOf` cr
+moveBytes ∷ ( pr1 `AncestorRegion` cr
+            , pr2 `AncestorRegion` cr
             , MonadIO cr
             )
           ⇒ RegionalPtr α pr1 -- ^ Destination

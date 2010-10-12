@@ -125,10 +125,10 @@ mallocBytes size = block $ do
                      unsafeRegionalPtr ptr $ free ptr
 
 -- TODO:
--- realloc ∷ (Storable β, pr `ParentOf` cr, MonadIO cr)
+-- realloc ∷ (Storable β, pr `AncestorRegion` cr, MonadIO cr)
 --         ⇒ RegionalPtr α pr → cr (RegionalPtr β pr)
 -- realloc = ...
--- reallocBytes ∷ (pr `ParentOf` cr, MonadIO cr)
+-- reallocBytes ∷ (pr `AncestorRegion` cr, MonadIO cr)
 --              ⇒ RegionalPtr α pr → Int → cr (RegionalPtr α pr)
 -- reallocBytes = ...
 
