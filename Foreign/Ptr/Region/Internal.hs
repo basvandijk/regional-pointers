@@ -45,7 +45,7 @@ import Control.Monad.IO.Class ( MonadIO, liftIO )
 
 -- from regions:
 import Control.Monad.Trans.Region.OnExit ( FinalizerHandle, Finalizer, onExit )
-import Control.Monad.Trans.Region        ( RegionT, Dup(dup) )
+import Control.Monad.Trans.Region        ( RegionT, RootRegion, Dup(dup) )
 
 
 --------------------------------------------------------------------------------
@@ -59,6 +59,7 @@ data RegionalPtr α (r ∷ * → *) = RegionalPtr !(Ptr α) !(Maybe (FinalizerHa
 instance Dup (RegionalPtr α) where
     dup (RegionalPtr ptr Nothing)   = return $ RegionalPtr ptr Nothing
     dup (RegionalPtr ptr (Just ch)) = liftM (RegionalPtr ptr ∘ Just) $ dup ch
+
 
 --------------------------------------------------------------------------------
 -- * Constructing regional pointers
@@ -82,7 +83,11 @@ unsafeRegionalPtr ptr finalize = liftM (RegionalPtr ptr ∘ Just) $ onExit final
 --
 -- This function is unsafe because this library can't guarantee the finalisation
 -- of the pointer, you have to verify the correct finalisation yourself.
-unsafePureRegionalPtr ∷ Ptr α → RegionalPtr α r
+--
+-- Note that the region parameter of the 'RegionalPtr' is set to 'RootRegion'
+-- which is the ancestor of any region. This allows the regional pointer to be
+-- used in any region.
+unsafePureRegionalPtr ∷ Ptr α → RegionalPtr α RootRegion
 unsafePureRegionalPtr ptr = RegionalPtr ptr Nothing
 
 

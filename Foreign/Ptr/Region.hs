@@ -65,7 +65,11 @@ import Foreign.Ptr.Region.Unsafe   ( unsafePureRegionalPtr, unsafePtr )
 -- Note that @nullPtr@ is a pure value. This means it does not perform the
 -- side-effect of registering a finalizer like @free nullPtr@
 -- in the 'RegionT' monad.
-nullPtr ∷ RegionalPtr α r
+--
+-- Finally note that the region parameter of the 'RegionalPtr' is set to
+-- 'RootRegion' which is the ancestor of any region. This allows 'nullPtr' to be
+-- used in any region.
+nullPtr ∷ RegionalPtr α RootRegion
 nullPtr = unsafePureRegionalPtr FP.nullPtr
 
 
