@@ -55,7 +55,7 @@ module Foreign.Marshal.Array.Region
 
 -- from base:
 import Prelude                                ( (*), succ )
-import Data.Function                          ( ($), flip, const )
+import Data.Function                          ( ($), flip )
 import Data.Int                               ( Int )
 import Data.List                              ( length )
 import Data.Eq                                ( Eq )
@@ -208,7 +208,7 @@ withArray ∷ (Storable α, MonadCatchIO pr)
           ⇒ [α]
           → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
           → pr β
-withArray vals = withArrayLen vals ∘ const
+withArray vals f = withArrayLen vals $ \_ → f
 
 -- | Like 'withArray', but a terminator indicates where the array ends.
 withArray0 ∷ (Storable α, MonadCatchIO pr)
@@ -216,7 +216,7 @@ withArray0 ∷ (Storable α, MonadCatchIO pr)
            → [α]
            → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
            → pr β
-withArray0 marker vals = withArrayLen0 marker vals ∘ const
+withArray0 marker vals f = withArrayLen0 marker vals $ \_ → f
 
 -- | Like 'withArray', but the action gets the number of values as an additional
 -- parameter.
