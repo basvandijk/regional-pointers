@@ -97,8 +97,8 @@ import Data.Function.Unicode             ( (∘) )
 -- from transformers:
 import Control.Monad.IO.Class            ( MonadIO, liftIO )
 
--- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO             ( MonadCatchIO )
+-- from monad-peel:
+import Control.Monad.IO.Peel             ( MonadPeelIO )
 
 -- from regions:
 import Control.Monad.Trans.Region        ( RegionT, AncestorRegion )
@@ -152,7 +152,7 @@ peekCStringLen = peekCAStringLen
 -- The Haskell string may /not/ contain any NUL characters
 --
 -- Wraps: @Foreign.C.String.'FCS.newCString'@.
-newCString ∷ MonadCatchIO pr
+newCString ∷ MonadPeelIO pr
            ⇒ String → RegionT s pr (RegionalCString (RegionT s pr))
 newCString = newCAString
 
@@ -160,7 +160,7 @@ newCString = newCAString
 -- explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCStringLen'@.
-newCStringLen ∷ MonadCatchIO pr
+newCStringLen ∷ MonadPeelIO pr
               ⇒ String → RegionT s pr (RegionalCStringLen (RegionT s pr))
 newCStringLen = newCAStringLen
 
@@ -173,7 +173,7 @@ newCStringLen = newCAStringLen
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCString'@.
-withCString ∷ MonadCatchIO pr
+withCString ∷ MonadPeelIO pr
             ⇒ String
             → (∀ s. RegionalCString (RegionT s pr) → RegionT s pr α)
             → pr α
@@ -186,7 +186,7 @@ withCString = withCAString
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCStringLen'@.
-withCStringLen ∷ MonadCatchIO pr
+withCStringLen ∷ MonadPeelIO pr
                ⇒ String
                → (∀ s. RegionalCStringLen (RegionT s pr) → RegionT s pr α)
                → pr α
@@ -221,7 +221,7 @@ peekCAStringLen = liftIO ∘ FCS.peekCAStringLen ∘ first unsafePtr
 -- The Haskell string may /not/ contain any NUL characters
 --
 -- Wraps: @Foreign.C.String.'FCS.newCAString'@.
-newCAString ∷ MonadCatchIO pr
+newCAString ∷ MonadPeelIO pr
             ⇒ String → RegionT s pr (RegionalCString (RegionT s pr))
 newCAString = newArray0 nUL ∘ charsToCChars
 
@@ -229,7 +229,7 @@ newCAString = newArray0 nUL ∘ charsToCChars
 -- explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCAStringLen'@.
-newCAStringLen ∷ MonadCatchIO pr
+newCAStringLen ∷ MonadPeelIO pr
                ⇒ String → RegionT s pr (RegionalCStringLen (RegionT s pr))
 newCAStringLen = newArrayLen ∘ charsToCChars
 
@@ -242,7 +242,7 @@ newCAStringLen = newArrayLen ∘ charsToCChars
 -- via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCAString'@.
-withCAString ∷ MonadCatchIO pr
+withCAString ∷ MonadPeelIO pr
              ⇒ String
              → (∀ s. RegionalCString (RegionT s pr) → RegionT s pr α)
              → pr α
@@ -255,7 +255,7 @@ withCAString = withArray0 nUL ∘ charsToCChars
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCAStringLen'@.
-withCAStringLen ∷ MonadCatchIO pr
+withCAStringLen ∷ MonadPeelIO pr
                 ⇒ String
                 → (∀ s. RegionalCStringLen (RegionT s pr) → RegionT s pr α)
                 → pr α
@@ -299,7 +299,7 @@ peekCWStringLen = liftIO ∘ FCS.peekCWStringLen ∘ first unsafePtr
 -- The Haskell string may /not/ contain any NUL characters.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCWString'@.
-newCWString ∷ MonadCatchIO pr
+newCWString ∷ MonadPeelIO pr
             ⇒ String → RegionT s pr (RegionalCWString (RegionT s pr))
 newCWString = newArray0 wNUL ∘ charsToCWchars
 
@@ -307,7 +307,7 @@ newCWString = newArray0 wNUL ∘ charsToCWchars
 -- with explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCWStringLen'@.
-newCWStringLen ∷ MonadCatchIO pr
+newCWStringLen ∷ MonadPeelIO pr
                ⇒ String → RegionT s pr (RegionalCWStringLen (RegionT s pr))
 newCWStringLen = newArrayLen ∘ charsToCWchars
 
@@ -320,7 +320,7 @@ newCWStringLen = newArrayLen ∘ charsToCWchars
 --   normally or via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCWString'@.
-withCWString ∷ MonadCatchIO pr
+withCWString ∷ MonadPeelIO pr
              ⇒ String
              → (∀ s. RegionalCWString (RegionT s pr) → RegionT s pr α)
              → pr α
@@ -335,7 +335,7 @@ withCWString = withArray0 wNUL ∘ charsToCWchars
 --   normally or via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCWStringLen'@.
-withCWStringLen ∷ MonadCatchIO pr
+withCWStringLen ∷ MonadPeelIO pr
                 ⇒ String
                 → (∀ s. RegionalCWStringLen (RegionT s pr) → RegionT s pr α)
                 → pr α
@@ -354,7 +354,7 @@ wNUL ∷ CWchar
 wNUL = 0
 
 -- | allocate an array to hold the list and pair it with the number of elements.
-newArrayLen ∷ (Storable α, MonadCatchIO pr)
+newArrayLen ∷ (Storable α, MonadPeelIO pr)
             ⇒ [α] → RegionT s pr (RegionalPtr α (RegionT s pr), Int)
 newArrayLen xs = do
   rPtr ← newArray xs

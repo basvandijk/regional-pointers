@@ -64,8 +64,8 @@ import Data.Function.Unicode                  ( (∘) )
 -- from transformers:
 import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
--- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO                  ( MonadCatchIO )
+-- from monad-peel:
+import Control.Monad.IO.Peel                  ( MonadPeelIO )
 
 -- from regions:
 import Control.Monad.Trans.Region             ( RegionT, AncestorRegion )
@@ -91,7 +91,7 @@ import Foreign.Storable.Region                ( poke )
 -- exception).
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.with'@.
-with ∷ (Storable α, MonadCatchIO pr)
+with ∷ (Storable α, MonadPeelIO pr)
      ⇒ α → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β) → pr β
 with val f = alloca $ \ptr → poke ptr val >> f ptr
 
@@ -100,7 +100,7 @@ with val f = alloca $ \ptr → poke ptr val >> f ptr
 -- 'sizeOf' method from the instance of 'Storable' for the appropriate type.
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.new'@.
-new ∷ (Storable α, MonadCatchIO pr)
+new ∷ (Storable α, MonadPeelIO pr)
     ⇒ α → RegionT s pr (RegionalPtr α (RegionT s pr))
 new val = do ptr ← malloc
              poke ptr val

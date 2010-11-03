@@ -55,8 +55,9 @@ import Prelude.Unicode                        ( (⊥) )
 -- from transformers:
 import Control.Monad.IO.Class                 ( liftIO )
 
--- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO                  ( MonadCatchIO, block )
+-- from monad-peel:
+import Control.Monad.IO.Peel                  ( MonadPeelIO )
+import Control.Exception.Peel                 ( block )
 
 -- from regions:
 import Control.Monad.Trans.Region             ( RegionT, runRegionT )
@@ -79,7 +80,7 @@ This should provide a safer replacement for:
 
 Note that: @alloca = 'allocaBytes' $ 'sizeOf' (undefined :: &#945;)@
 -}
-alloca ∷ ∀ α pr β. (Storable α, MonadCatchIO pr)
+alloca ∷ ∀ α pr β. (Storable α, MonadPeelIO pr)
        ⇒ (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
        → pr β
 alloca = allocaBytes $ sizeOf ((⊥) ∷ α)
@@ -93,7 +94,7 @@ This should provide a safer replacement for:
 
 Note that: @allocaBytes size f = 'runRegionT' $ 'mallocBytes' size >>= f@
 -}
-allocaBytes ∷ ∀ α pr β. MonadCatchIO pr
+allocaBytes ∷ ∀ α pr β. MonadPeelIO pr
             ⇒ Int
             → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
             → pr β
@@ -112,7 +113,7 @@ This should provide a safer replacement for:
 
 Note that: @malloc = 'mallocBytes' $ 'sizeOf' (undefined :: &#945;)@
 -}
-malloc ∷ ∀ α pr s. (Storable α, MonadCatchIO pr)
+malloc ∷ ∀ α pr s. (Storable α, MonadPeelIO pr)
        ⇒ RegionT s pr (RegionalPtr α (RegionT s pr))
 malloc = mallocBytes $ sizeOf ((⊥) ∷ α)
 
@@ -121,7 +122,7 @@ malloc = mallocBytes $ sizeOf ((⊥) ∷ α)
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.mallocBytes'@.
 -}
-mallocBytes ∷ MonadCatchIO pr
+mallocBytes ∷ MonadPeelIO pr
             ⇒ Int
             → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocBytes size = block $ do

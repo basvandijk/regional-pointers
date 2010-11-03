@@ -84,8 +84,8 @@ import Prelude.Unicode                        ( (⊥) )
 -- from transformers:
 import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
--- from MonadCatchIO-transformers:
-import Control.Monad.CatchIO                  ( MonadCatchIO )
+-- from monad-peel:
+import Control.Monad.IO.Peel                  ( MonadPeelIO )
 
 -- from regions:
 import Control.Monad.Trans.Region             ( RegionT , AncestorRegion )
@@ -108,19 +108,19 @@ import Foreign.Marshal.Utils.Region           ( new, with )
 -- | Allocate storage for the given number of elements of a storable type.
 --
 -- Like 'malloc', but for multiple elements.
-mallocArray ∷ ∀ α s pr. (Storable α, MonadCatchIO pr)
+mallocArray ∷ ∀ α s pr. (Storable α, MonadPeelIO pr)
             ⇒ Int → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocArray size = mallocBytes $ size * sizeOf ((⊥) ∷ α)
 
 -- | Like 'mallocArray', but add an extra position to hold a special termination
 -- element.
-mallocArray0 ∷ (Storable α, MonadCatchIO pr)
+mallocArray0 ∷ (Storable α, MonadPeelIO pr)
              ⇒ Int → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocArray0 = mallocArray ∘ succ
 
 -- | Temporarily allocate space for the given number of elements (like 'alloca',
 -- but for multiple elements).
-allocaArray ∷ ∀ α pr β. (Storable α, MonadCatchIO pr)
+allocaArray ∷ ∀ α pr β. (Storable α, MonadPeelIO pr)
             ⇒ Int
             → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
             → pr β
@@ -128,7 +128,7 @@ allocaArray size = allocaBytes $ size * sizeOf ((⊥) ∷ α)
 
 -- | Like 'allocaArray', but add an extra position to hold a special termination
 -- element.
-allocaArray0 ∷ ∀ α pr β. (Storable α, MonadCatchIO pr)
+allocaArray0 ∷ ∀ α pr β. (Storable α, MonadPeelIO pr)
              ⇒ Int
              → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
              → pr β
@@ -190,7 +190,7 @@ pokeArray0 m rp xs = liftIO $ FMA.pokeArray0 m (unsafePtr rp) xs
 -- sequence of storable values.
 --
 -- Like 'new', but for multiple elements.
-newArray ∷ (Storable α, MonadCatchIO pr)
+newArray ∷ (Storable α, MonadPeelIO pr)
          ⇒ [α] → RegionT s pr (RegionalPtr α (RegionT s pr ))
 newArray vals  = do
   ptr ← mallocArray $ length vals
@@ -199,7 +199,7 @@ newArray vals  = do
 
 -- | Write a list of storable elements into a newly allocated, consecutive
 -- sequence of storable values, where the end is fixed by the given end marker.
-newArray0 ∷ (Storable α, MonadCatchIO pr)
+newArray0 ∷ (Storable α, MonadPeelIO pr)
           ⇒ α → [α] → RegionT s pr (RegionalPtr α (RegionT s pr))
 newArray0 marker vals  = do
   ptr ← mallocArray0 $ length vals
@@ -209,14 +209,14 @@ newArray0 marker vals  = do
 -- | Temporarily store a list of storable values in memory.
 --
 -- Like 'with', but for multiple elements.
-withArray ∷ (Storable α, MonadCatchIO pr)
+withArray ∷ (Storable α, MonadPeelIO pr)
           ⇒ [α]
           → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
           → pr β
 withArray vals f = withArrayLen vals $ \_ → f
 
 -- | Like 'withArray', but a terminator indicates where the array ends.
-withArray0 ∷ (Storable α, MonadCatchIO pr)
+withArray0 ∷ (Storable α, MonadPeelIO pr)
            ⇒ α
            → [α]
            → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
@@ -225,7 +225,7 @@ withArray0 marker vals f = withArrayLen0 marker vals $ \_ → f
 
 -- | Like 'withArray', but the action gets the number of values as an additional
 -- parameter.
-withArrayLen ∷ (Storable α, MonadCatchIO pr)
+withArrayLen ∷ (Storable α, MonadPeelIO pr)
             ⇒ [α]
             → (∀ s. Int → RegionalPtr α (RegionT s pr) → RegionT s pr β)
             → pr β
@@ -238,7 +238,7 @@ withArrayLen vals f =
     len = length vals
 
 -- | Like 'withArrayLen', but a terminator indicates where the array ends.
-withArrayLen0 ∷ (Storable α, MonadCatchIO pr)
+withArrayLen0 ∷ (Storable α, MonadPeelIO pr)
               ⇒ α
               → [α]
               → (∀ s. Int → RegionalPtr α (RegionT s pr) → RegionT s pr β)

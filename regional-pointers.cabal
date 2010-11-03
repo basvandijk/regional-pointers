@@ -34,11 +34,11 @@ source-repository head
 
 Library
   GHC-Options: -Wall
-  build-depends: base                      >= 4     && < 4.4
-               , base-unicode-symbols      >= 0.1.1 && < 0.3
-               , regions                   >= 0.8   && < 0.9
-               , transformers              >= 0.2   && < 0.3
-               , MonadCatchIO-transformers >= 0.2   && < 0.3
+  build-depends: base                 >= 4     && < 4.4
+               , base-unicode-symbols >= 0.1.1 && < 0.3
+               , regions              >= 0.8   && < 0.9
+               , transformers         >= 0.2   && < 0.3
+               , monad-peel           >= 0.1   && < 0.2
   exposed-modules: Foreign.Ptr.Region
                    Foreign.Ptr.Region.Unsafe
                    Foreign.Marshal.Alloc.Region
