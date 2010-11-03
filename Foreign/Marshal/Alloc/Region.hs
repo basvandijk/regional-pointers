@@ -32,7 +32,7 @@ module Foreign.Marshal.Alloc.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Control.Monad                          ( (>>=), fail )
+import Control.Monad                          ( (>>=) )
 import Data.Function                          ( ($) )
 import Data.Int                               ( Int )
 import Foreign.Storable                       ( Storable, sizeOf )
@@ -43,6 +43,10 @@ import qualified Foreign.Marshal.Alloc as FMA ( mallocBytes )
 
 #ifdef __HADDOCK__
 import qualified Foreign.Marshal.Alloc as FMA ( alloca, allocaBytes, malloc )
+#endif
+
+#if __GLASGOW_HASKELL__ < 701
+import Control.Monad                          ( fail )
 #endif
 
 -- from base-unicode-symbols:

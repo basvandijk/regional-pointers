@@ -47,14 +47,14 @@ module Foreign.C.String.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Prelude                           ( fromInteger, fromIntegral )
+import Prelude                           ( fromIntegral )
 import Data.Function                     ( ($) )
 import Data.Bool                         ( Bool )
 import Data.Int                          ( Int )
 import Data.Char                         ( Char, String, ord )
 import Data.List                         ( map, length )
 import Control.Arrow                     ( first )
-import Control.Monad                     ( return, (>>=), fail)
+import Control.Monad                     ( return )
 import Foreign.C.Types                   ( CChar, CWchar )
 import Foreign.Storable                  ( Storable )
 import qualified Foreign.C.String as FCS ( charIsRepresentable
@@ -64,9 +64,9 @@ import qualified Foreign.C.String as FCS ( charIsRepresentable
                                          )
 
 #ifdef __HADDOCK__
-import Foreign.C.String ( CString,  CStringLen
-                        , CWString, CWStringLen
-                        )
+import Foreign.C.String                  ( CString,  CStringLen
+                                         , CWString, CWStringLen
+                                         )
 import qualified Foreign.C.String as FCS ( peekCString,  peekCStringLen
                                          , newCString,   newCStringLen
                                          , withCString,  withCStringLen
@@ -75,6 +75,11 @@ import qualified Foreign.C.String as FCS ( peekCString,  peekCStringLen
                                          , newCWString,  newCWStringLen
                                          , withCWString, withCWStringLen
                                          )
+#endif
+
+#if __GLASGOW_HASKELL__ < 701
+import Prelude                           ( fromInteger )
+import Control.Monad                     ( (>>=), fail )
 #endif
 
 #ifdef mingw32_HOST_OS

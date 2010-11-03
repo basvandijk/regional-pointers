@@ -43,7 +43,7 @@ module Foreign.Marshal.Utils.Region
 -- from base:
 import Data.Function                          ( ($) )
 import Data.Int                               ( Int )
-import Control.Monad                          ( return, (>>=), fail, (>>) )
+import Control.Monad                          ( return, (>>) )
 import qualified Foreign.Marshal.Utils as FMU ( fromBool,  toBool
                                               , copyBytes, moveBytes
                                               )
@@ -52,6 +52,10 @@ import Foreign.Storable                       ( Storable )
 #ifdef __HADDOCK__
 import qualified Foreign.Marshal.Utils as FMU ( with, new )
 import Foreign.Storable                       ( sizeOf )
+#endif
+
+#if __GLASGOW_HASKELL__ < 701
+import Control.Monad                          ( (>>=), fail )
 #endif
 
 -- from base-unicode-symbols:

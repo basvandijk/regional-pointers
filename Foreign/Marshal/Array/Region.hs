@@ -59,7 +59,7 @@ import Data.Function                          ( ($), flip )
 import Data.Int                               ( Int )
 import Data.List                              ( length )
 import Data.Eq                                ( Eq )
-import Control.Monad                          ( return, (>>=), fail, (>>) )
+import Control.Monad                          ( return )
 import System.IO                              ( IO )
 import Foreign.Ptr                            ( Ptr )
 import Foreign.Storable                       ( Storable, sizeOf )
@@ -72,6 +72,11 @@ import qualified Foreign.Marshal.Array as FMA ( peekArray
                                               , lengthArray0
                                               , advancePtr
                                               )
+
+#if __GLASGOW_HASKELL__ < 701
+import Control.Monad                          ( (>>=), fail, (>>) )
+#endif
+
 -- from base-unicode-symbols:
 import Data.Function.Unicode                  ( (∘) )
 import Prelude.Unicode                        ( (⊥) )
