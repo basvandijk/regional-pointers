@@ -37,7 +37,7 @@ import Control.Monad.IO.Class           ( MonadIO )
 import Control.Monad.Trans.Region       ( AncestorRegion )
 
 -- from ourselves:
-import Foreign.Ptr.Region               ( RegionalPtr )
+import Foreign.Ptr.Region               ( AllocatedPointer )
 import Foreign.Ptr.Region.Unsafe        ( unsafeWrap, unsafeWrap2, unsafeWrap3 )
 
 
@@ -57,8 +57,10 @@ import Foreign.Ptr.Region.Unsafe        ( unsafeWrap, unsafeWrap2, unsafeWrap3 )
 -- implementation of the function.
 --
 -- Wraps: @Foreign.Storable.'FS.peekElemOff'@.
-peekElemOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
-            ⇒ RegionalPtr α pr → Int → cr α
+peekElemOff ∷ ( AllocatedPointer pointer, Storable α
+              , pr `AncestorRegion` cr, MonadIO cr
+              )
+            ⇒ pointer α pr → Int → cr α
 peekElemOff = unsafeWrap2 FS.peekElemOff
 
 -- | Write a value to a memory area regarded as an array of values of the same
@@ -68,8 +70,10 @@ peekElemOff = unsafeWrap2 FS.peekElemOff
 -- >   poke (addr `plusPtr` (idx * sizeOf x)) x
 --
 -- Wraps: @Foreign.Storable.'FS.pokeElemOff'@.
-pokeElemOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
-            ⇒ RegionalPtr α pr → Int → α → cr ()
+pokeElemOff ∷ ( AllocatedPointer pointer, Storable α
+              , pr `AncestorRegion` cr, MonadIO cr
+              )
+            ⇒ pointer α pr → Int → α → cr ()
 pokeElemOff = unsafeWrap3 FS.pokeElemOff
 
 -- | Read a value from a memory location given by a base address and offset.
@@ -78,8 +82,10 @@ pokeElemOff = unsafeWrap3 FS.pokeElemOff
 -- > peekByteOff addr off = peek (addr `plusPtr` off)
 --
 -- Wraps: @Foreign.Storable.'FS.peekByteOff'@.
-peekByteOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
-            ⇒ RegionalPtr β pr → Int → cr α
+peekByteOff ∷ ( AllocatedPointer pointer, Storable α
+              , pr `AncestorRegion` cr, MonadIO cr
+              )
+            ⇒ pointer β pr → Int → cr α
 peekByteOff = unsafeWrap2 FS.peekByteOff
 
 -- | Write a value to a memory location given by a base address and offset.  The
@@ -88,8 +94,10 @@ peekByteOff = unsafeWrap2 FS.peekByteOff
 -- > pokeByteOff addr off x = poke (addr `plusPtr` off) x
 --
 -- Wraps: @Foreign.Storable.'FS.pokeByteOff'@.
-pokeByteOff ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
-            ⇒ RegionalPtr β pr → Int → α → cr ()
+pokeByteOff ∷ ( AllocatedPointer pointer, Storable α
+              , pr `AncestorRegion` cr, MonadIO cr
+              )
+            ⇒ pointer β pr → Int → α → cr ()
 pokeByteOff = unsafeWrap3 FS.pokeByteOff
 
 -- | Read a value from the given memory location.
@@ -101,16 +109,20 @@ pokeByteOff = unsafeWrap3 FS.pokeByteOff
 -- is fulfilled.
 --
 -- Wraps: @Foreign.Storable.'FS.peek'@.
-peek ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
-     ⇒ RegionalPtr α pr → cr α
+peek ∷ ( AllocatedPointer pointer, Storable α
+       , pr `AncestorRegion` cr, MonadIO cr
+       )
+     ⇒ pointer α pr → cr α
 peek = unsafeWrap FS.peek
 
 -- | Write the given value to the given memory location.  Alignment restrictions
 -- might apply; see 'peek'.
 --
 -- Wraps: @Foreign.Storable.'FS.poke'@.
-poke ∷ (pr `AncestorRegion` cr, Storable α, MonadIO cr)
-     ⇒ RegionalPtr α pr → α → cr ()
+poke ∷ ( AllocatedPointer pointer, Storable α
+       , pr `AncestorRegion` cr, MonadIO cr
+       )
+     ⇒ pointer α pr → α → cr ()
 poke = unsafeWrap2 FS.poke
 
 

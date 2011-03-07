@@ -41,40 +41,40 @@ module Foreign.Marshal.Utils.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Data.Function                          ( ($) )
-import Data.Int                               ( Int )
-import Control.Monad                          ( return, (>>) )
-import qualified Foreign.Marshal.Utils as FMU ( fromBool,  toBool
-                                              , copyBytes, moveBytes
-                                              )
-import Foreign.Storable                       ( Storable )
+import qualified Foreign.Marshal.Utils as FMU
+                                    ( with,      new
+                                    , fromBool,  toBool
+                                    , copyBytes, moveBytes
+                                    )
+import Foreign.Storable             ( Storable )
 
 #ifdef __HADDOCK__
-import qualified Foreign.Marshal.Utils as FMU ( with, new )
-import Foreign.Storable                       ( sizeOf )
+import Foreign.Storable             ( sizeOf )
 #endif
 
-#if __GLASGOW_HASKELL__ < 701
-import Control.Monad                          ( (>>=), fail )
-#endif
+import Data.Int                     ( Int )
 
 -- from base-unicode-symbols:
-import Data.Function.Unicode                  ( (∘) )
+import Data.Function.Unicode        ( (∘) )
 
 -- from transformers:
-import Control.Monad.IO.Class                 ( MonadIO, liftIO )
+import Control.Monad.IO.Class       ( MonadIO, liftIO )
 
--- from monad-peel:
-import Control.Monad.IO.Peel                  ( MonadPeelIO )
+-- from monad-control:
+import Control.Monad.IO.Control     ( MonadControlIO )
 
 -- from regions:
-import Control.Monad.Trans.Region             ( RegionT, AncestorRegion )
+import Control.Monad.Trans.Region   ( RegionT
+                                    , AncestorRegion
+                                    , LocalRegion, Local
+                                    )
 
 -- from ourselves:
-import Foreign.Ptr.Region                     ( RegionalPtr )
-import Foreign.Ptr.Region.Unsafe              ( unsafePtr )
-import Foreign.Marshal.Alloc.Region           ( alloca, malloc )
-import Foreign.Storable.Region                ( poke )
+import Foreign.Ptr.Region           ( AllocatedPointer
+                                    , RegionalPtr
+                                    )
+import Foreign.Marshal.Alloc.Region ( LocalPtr )
+import Foreign.Ptr.Region.Unsafe    ( unsafePtr, wrapAlloca, wrapMalloc )
 
 
 --------------------------------------------------------------------------------
@@ -91,20 +91,19 @@ import Foreign.Storable.Region                ( poke )
 -- exception).
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.with'@.
-with ∷ (Storable α, MonadPeelIO pr)
-     ⇒ α → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β) → pr β
-with val f = alloca $ \ptr → poke ptr val >> f ptr
+with ∷ (Storable α, MonadControlIO pr)
+     ⇒ α → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β) -- ^
+     → RegionT s pr β
+with = wrapAlloca ∘ FMU.with
 
 -- | Allocate a block of memory and marshal a value into it (the combination of
 -- 'malloc' and 'poke').  The size of the area allocated is determined by the
 -- 'sizeOf' method from the instance of 'Storable' for the appropriate type.
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.new'@.
-new ∷ (Storable α, MonadPeelIO pr)
+new ∷ (Storable α, MonadControlIO pr)
     ⇒ α → RegionT s pr (RegionalPtr α (RegionT s pr))
-new val = do ptr ← malloc
-             poke ptr val
-             return ptr
+new = wrapMalloc ∘ FMU.new
 
 -- TODO:
 -- -- ** Marshalling of Maybe values
@@ -122,29 +121,35 @@ new val = do ptr ← malloc
 -- first (destination); the copied areas may /not/ overlap
 --
 -- Wraps: @Foreign.Marshal.Utils.'FMU.copyBytes'@.
-copyBytes ∷ ( pr1 `AncestorRegion` cr
+copyBytes ∷ ( AllocatedPointer pointer1
+            , AllocatedPointer pointer2
+            , pr1 `AncestorRegion` cr
             , pr2 `AncestorRegion` cr
             , MonadIO cr
             )
-          ⇒ RegionalPtr α pr1 -- ^ Destination
-          → RegionalPtr α pr2 -- ^ Source
-          → Int               -- ^ Number of bytes to copy
+          ⇒ pointer1 α pr1 -- ^ Destination
+          → pointer2 α pr2 -- ^ Source
+          → Int            -- ^ Number of bytes to copy
           → cr ()
-copyBytes rPtr1 rPtr2 = liftIO ∘ FMU.copyBytes (unsafePtr rPtr1) (unsafePtr rPtr2)
+copyBytes pointer1 pointer2 = liftIO ∘ FMU.copyBytes (unsafePtr pointer1)
+                                                     (unsafePtr pointer2)
 
 -- | Copies the given number of bytes from the second area (source) into the
 -- first (destination); the copied areas /may/ overlap
 --
 -- Wraps: @Foreign.Marshal.Utils.'FMU.moveBytes'@.
-moveBytes ∷ ( pr1 `AncestorRegion` cr
+moveBytes ∷ ( AllocatedPointer pointer1
+            , AllocatedPointer pointer2
+            , pr1 `AncestorRegion` cr
             , pr2 `AncestorRegion` cr
             , MonadIO cr
             )
-          ⇒ RegionalPtr α pr1 -- ^ Destination
-          → RegionalPtr α pr2 -- ^ Source
-          → Int               -- ^ Number of bytes to move
+          ⇒ pointer1 α pr1 -- ^ Destination
+          → pointer2 α pr2 -- ^ Source
+          → Int            -- ^ Number of bytes to move
           → cr ()
-moveBytes rPtr1 rPtr2 = liftIO ∘ FMU.moveBytes (unsafePtr rPtr1) (unsafePtr rPtr2)
+moveBytes pointer1 pointer2 = liftIO ∘ FMU.moveBytes (unsafePtr pointer1)
+                                                     (unsafePtr pointer2)
 
 
 -- The End ---------------------------------------------------------------------

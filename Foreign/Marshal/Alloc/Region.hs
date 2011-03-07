@@ -16,9 +16,12 @@
 
 module Foreign.Marshal.Alloc.Region
     ( -- * Local allocation
-      alloca
+      LocalPtr
+    , alloca
     , allocaBytes
-
+#if MIN_VERSION_base(4,3,0)
+    , allocaBytesAligned
+#endif
       -- * Dynamic allocation
     , malloc
     , mallocBytes
@@ -32,102 +35,107 @@ module Foreign.Marshal.Alloc.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Control.Monad                          ( (>>=) )
-import Data.Function                          ( ($) )
 import Data.Int                               ( Int )
-import Foreign.Storable                       ( Storable, sizeOf )
+import Foreign.Storable                       ( Storable )
 
-import Foreign.Marshal.Alloc                  ( free )
-
-import qualified Foreign.Marshal.Alloc as FMA ( mallocBytes )
-
-#ifdef __HADDOCK__
-import qualified Foreign.Marshal.Alloc as FMA ( alloca, allocaBytes, malloc )
+import qualified Foreign.Marshal.Alloc as FMA ( alloca, allocaBytes
+                                              , malloc, mallocBytes
+                                              )
+#if MIN_VERSION_base(4,3,0)
+import qualified Foreign.Marshal.Alloc as FMA ( allocaBytesAligned )
 #endif
 
-#if __GLASGOW_HASKELL__ < 701
-import Control.Monad                          ( fail )
+#if __HADDOCK__
+import Foreign.Storable                       ( sizeOf )
 #endif
 
--- from base-unicode-symbols:
-import Prelude.Unicode                        ( (⊥) )
-
--- from transformers:
-import Control.Monad.IO.Class                 ( liftIO )
-
--- from monad-peel:
-import Control.Monad.IO.Peel                  ( MonadPeelIO )
-import Control.Exception.Peel                 ( block )
+-- from monad-control:
+import Control.Monad.IO.Control               ( MonadControlIO )
 
 -- from regions:
-import Control.Monad.Trans.Region             ( RegionT, runRegionT )
+import Control.Monad.Trans.Region             ( RegionT, LocalRegion, Local )
 
 -- from ourselves:
-import Foreign.Ptr.Region                     ( RegionalPtr  )
-import Foreign.Ptr.Region.Unsafe              ( unsafeRegionalPtr )
+import Foreign.Ptr.Region                     ( RegionalPtr,  )
+import Foreign.Ptr.Region.Internal            ( LocalPtr )
+import Foreign.Ptr.Region.Unsafe              ( wrapAlloca, wrapMalloc )
 
 
 --------------------------------------------------------------------------------
 -- * Local allocation
 --------------------------------------------------------------------------------
 
-{-| Convenience function which allocates sufficient memory to hold values of
-type @&#945;@, applies the given continuation function to the resulting regional
-pointer and runs the resulting region.
+{-|
+@'alloca' f@ executes the computation @f@, passing as argument a pointer to
+a temporarily allocated block of memory sufficient to hold values of type @&#945;@.
+
+The memory is freed when @f@ terminates (either normally or via an exception).
 
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.alloca'@.
-
-Note that: @alloca = 'allocaBytes' $ 'sizeOf' (undefined :: &#945;)@
 -}
-alloca ∷ ∀ α pr β. (Storable α, MonadPeelIO pr)
-       ⇒ (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
-       → pr β
-alloca = allocaBytes $ sizeOf ((⊥) ∷ α)
+alloca ∷ (Storable α, MonadControlIO pr)
+       ⇒ (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
+       → RegionT s pr β
+alloca = wrapAlloca FMA.alloca
 
-{-| Convenience function which allocates the given number of bytes, applies the
-given continuation function to the resulting regional pointer and runs the
-resulting region.
+{-|
+@'allocaBytes' n f@ executes the computation @f@, passing as argument a
+pointer to a temporarily allocated block of memory of @n@ bytes.
+The block of memory is sufficiently aligned for any of the basic foreign types
+that fits into a memory block of the allocated size.
+
+The memory is freed when @f@ terminates (either normally or via an exception).
 
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.allocaBytes'@.
-
-Note that: @allocaBytes size f = 'runRegionT' $ 'mallocBytes' size >>= f@
 -}
-allocaBytes ∷ ∀ α pr β. MonadPeelIO pr
+allocaBytes ∷ MonadControlIO pr
             ⇒ Int
-            → (∀ s. RegionalPtr α (RegionT s pr) → RegionT s pr β)
-            → pr β
-allocaBytes size f = runRegionT $ mallocBytes size >>= f
+            → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
+            → RegionT s pr β
+allocaBytes size = wrapAlloca (FMA.allocaBytes size)
+
+#if MIN_VERSION_base(4,3,0)
+-- | This should provide a safer replacement for:
+-- @Foreign.Marshal.Alloc.'FMA.allocaBytesAligned'@.
+allocaBytesAligned ∷
+    MonadControlIO pr
+  ⇒ Int → Int
+  → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
+  → RegionT s pr β
+allocaBytesAligned size align = wrapAlloca (FMA.allocaBytesAligned size align)
+#endif
 
 
 --------------------------------------------------------------------------------
 -- * Dynamic allocation
 --------------------------------------------------------------------------------
 
-{-| Convenience function which allocates sufficient memory to hold values of
-type @&#945;@ and returns a regional pointer to them.
+{-|
+Allocate a block of memory that is sufficient to hold values of type @&#945;@.
+
+Note that: @malloc = 'mallocBytes' $ 'sizeOf' (undefined :: &#945;)@
 
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.malloc'@.
-
-Note that: @malloc = 'mallocBytes' $ 'sizeOf' (undefined :: &#945;)@
 -}
-malloc ∷ ∀ α pr s. (Storable α, MonadPeelIO pr)
+malloc ∷ ∀ α pr s. (Storable α, MonadControlIO pr)
        ⇒ RegionT s pr (RegionalPtr α (RegionT s pr))
-malloc = mallocBytes $ sizeOf ((⊥) ∷ α)
+malloc = wrapMalloc FMA.malloc
 
-{-| Allocates the given number of bytes and returns a regional pointer to them.
+{-|
+Allocate a block of memory of the given number of bytes.
+The block of memory is sufficiently aligned for any of the basic foreign types
+that fits into a memory block of the allocated size.
 
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.mallocBytes'@.
 -}
-mallocBytes ∷ MonadPeelIO pr
+mallocBytes ∷ MonadControlIO pr
             ⇒ Int
             → RegionT s pr (RegionalPtr α (RegionT s pr))
-mallocBytes size = block $ do
-                     ptr ← liftIO $ FMA.mallocBytes size
-                     unsafeRegionalPtr ptr $ free ptr
+mallocBytes size = wrapMalloc (FMA.mallocBytes size)
 
 -- TODO:
 -- realloc ∷ (Storable β, pr `AncestorRegion` cr, MonadIO cr)

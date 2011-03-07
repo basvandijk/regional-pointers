@@ -1,5 +1,5 @@
 name:          regional-pointers
-version:       0.5.0.1
+version:       0.6
 cabal-version: >=1.6
 build-type:    Custom
 license:       BSD3
@@ -26,7 +26,7 @@ description:   The library allows you to allocate memory in a region yielding a
                re-exported from this library.
                .
                This library provides wrappers around all the @Ptr@ functions
-               from the @Foreign.*@ modules from @base@.
+               from the @Foreign.*@ modules of the @base@ library.
 
 source-repository head
   Type:     darcs
@@ -36,9 +36,9 @@ Library
   GHC-Options: -Wall
   build-depends: base                 >= 4     && < 4.4
                , base-unicode-symbols >= 0.1.1 && < 0.3
-               , regions              >= 0.8   && < 0.9
+               , regions              >= 0.9   && < 0.10
                , transformers         >= 0.2   && < 0.3
-               , monad-peel           >= 0.1   && < 0.2
+               , monad-control        >= 0.2   && < 0.3
   exposed-modules: Foreign.Ptr.Region
                    Foreign.Ptr.Region.Unsafe
                    Foreign.Marshal.Alloc.Region

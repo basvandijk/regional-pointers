@@ -11,22 +11,27 @@
 -- @Ptr@ from a regional pointer and for lifting operations on @Ptrs@ to
 -- @RegionalPtrs@.
 --
---
 -------------------------------------------------------------------------------
 
 module Foreign.Ptr.Region.Unsafe
     ( -- * Unsafely constructing regional pointers
       unsafeRegionalPtr
-    , unsafePureRegionalPtr
+
+      -- * Wrapping @alloca@- and @malloc@-like functions
+    , wrapAlloca, wrapAlloca2
+    , wrapMalloc
+
+      -- * Wrapping @CStringLen@ operations
+    , wrapPeekStringLen
+    , wrapNewStringLen
+    , wrapWithStringLen
 
       -- * Unsafe utility functions for lifting operations on @Ptrs@ to @RegionalPtrs@
     , unsafePtr
+
     , unsafeWrap, unsafeWrap2, unsafeWrap3
+
+    , unsafeWrap2flp
     ) where
 
-import Foreign.Ptr.Region.Internal ( unsafeRegionalPtr
-                                   , unsafePureRegionalPtr
-
-                                   , unsafePtr
-                                   , unsafeWrap, unsafeWrap2, unsafeWrap3
-                                   )
+import Foreign.Ptr.Region.Internal
