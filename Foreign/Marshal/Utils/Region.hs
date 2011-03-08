@@ -1,7 +1,9 @@
-{-# LANGUAGE UnicodeSyntax
+{-# LANGUAGE CPP
+           , UnicodeSyntax
            , NoImplicitPrelude
-           , CPP
            , RankNTypes
+           , GADTs
+           , KindSignatures
   #-}
 
 -------------------------------------------------------------------------------
@@ -23,11 +25,14 @@ module Foreign.Marshal.Utils.Region
        , FMU.fromBool
        , FMU.toBool
 
-         -- ** Marshalling of Maybe values
-         -- | /TODO:/ Define and export: @maybeNew@, @maybeWith@ and @maybePeek@.
+         -- ** Marshalling of @MaybePointer@ values
+       , MaybePointer(..)
+       , maybeNew
+       , maybeWith
+       , MaybePeek(maybePeek)
 
          -- ** Marshalling lists of storable objects
-         -- | /TODO:/ Define and export: @withMany@.
+       , FMU.withMany
 
          -- ** Haskellish interface to memcpy and memmove
          -- | (argument order: destination, source)
@@ -41,40 +46,49 @@ module Foreign.Marshal.Utils.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import qualified Foreign.Marshal.Utils as FMU
-                                    ( with,      new
-                                    , fromBool,  toBool
-                                    , copyBytes, moveBytes
-                                    )
-import Foreign.Storable             ( Storable )
+import qualified Foreign.Marshal.Utils as FMU ( with,      new
+                                              , fromBool,  toBool
+                                              , withMany
+                                              , copyBytes, moveBytes
+                                              )
+import Foreign.Storable                       ( Storable )
 
 #ifdef __HADDOCK__
-import Foreign.Storable             ( sizeOf )
+import Foreign.Storable                       ( sizeOf )
+import qualified Foreign.Marshal.Utils as FMU ( maybeNew, maybeWith, maybePeek )
 #endif
 
-import Data.Int                     ( Int )
+import Data.Int                               ( Int )
+import Data.Maybe                             ( Maybe(Nothing, Just) )
+import Data.Functor                           ( (<$>) )
+import Control.Applicative                    ( Applicative, pure )
+import Control.Monad                          ( Monad, return )
 
 -- from base-unicode-symbols:
-import Data.Function.Unicode        ( (∘) )
+import Data.Function.Unicode                  ( (∘) )
 
 -- from transformers:
-import Control.Monad.IO.Class       ( MonadIO, liftIO )
+import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
 -- from monad-control:
-import Control.Monad.IO.Control     ( MonadControlIO )
+import Control.Monad.IO.Control               ( MonadControlIO )
 
 -- from regions:
-import Control.Monad.Trans.Region   ( RegionT
-                                    , AncestorRegion
-                                    , LocalRegion, Local
-                                    )
+import Control.Monad.Trans.Region             ( RegionT
+                                              , AncestorRegion
+                                              , RootRegion
+                                              , LocalRegion, Local
+                                              )
 
 -- from ourselves:
-import Foreign.Ptr.Region           ( AllocatedPointer
-                                    , RegionalPtr
-                                    )
-import Foreign.Marshal.Alloc.Region ( LocalPtr )
-import Foreign.Ptr.Region.Unsafe    ( unsafePtr, wrapAlloca, wrapMalloc )
+import Foreign.Ptr.Region                     ( AllocatedPointer
+                                              , RegionalPtr
+                                              , NullPtr, nullPtr
+                                              )
+import Foreign.Marshal.Alloc.Region           ( LocalPtr )
+import Foreign.Ptr.Region.Unsafe              ( unsafePtr
+                                              , wrapAlloca, wrapMalloc
+                                              )
 
 
 --------------------------------------------------------------------------------
@@ -105,11 +119,46 @@ new ∷ (Storable α, MonadControlIO pr)
     ⇒ α → RegionT s pr (RegionalPtr α (RegionT s pr))
 new = wrapMalloc ∘ FMU.new
 
--- TODO:
--- -- ** Marshalling of Maybe values
--- maybeNew
--- maybeWith
--- maybePeek
+
+-- ** Marshalling of @MaybePointer@ values
+
+-- | A @'MaybePointer' &#945;@ corresponds to a @'Maybe' &#945;@
+-- but additionally introduces some type equalities to the type-checker.
+data MaybePointer (α ∷ *) (pointer ∷ *) (β ∷ *) (r ∷ * → *) where
+    NullPointer ∷     MaybePointer α (NullPtr     β RootRegion) β RootRegion
+    JustPointer ∷ α → MaybePointer α (RegionalPtr β r)          β r
+
+-- | Allocate storage and marshal a storable value wrapped into a 'MaybePointer'.
+--
+-- The 'nullPtr' is used to represent 'NullPointer'.
+--
+-- Alternative for 'FMU.maybeNew'.
+maybeNew ∷ Monad m
+         ⇒ (α → m (RegionalPtr β r)) -- ^
+         → (MaybePointer α pointer β r → m pointer)
+maybeNew _  NullPointer    = return nullPtr
+maybeNew f (JustPointer x) = f x
+
+-- | Converts a @withXXX@ combinator into one marshalling a value wrapped
+-- into a 'MaybePointer', using 'nullPtr' to represent 'NoPointer'.
+--
+-- Alternative for 'FMU.maybeWith'
+maybeWith ∷ (α →                          (pointer → m γ) → m γ) -- ^
+          → (MaybePointer α pointer β r → (pointer → m γ) → m γ)
+maybeWith _  NullPointer    g = g nullPtr
+maybeWith f (JustPointer x) g = f x g
+
+class MaybePeek (pointer ∷ * → (* → *) → *) where
+    -- | Convert a @peek@ combinator into a one returning 'Nothing'
+    -- if applied to a 'nullPtr'.
+    --
+    -- Alternative for 'FMU.maybePeek'.
+    maybePeek ∷ Applicative m
+              ⇒ (pointer α r → m β) -- ^
+              → (pointer α r → m (Maybe β))
+
+instance MaybePeek NullPtr     where maybePeek _    _   = pure Nothing
+instance MaybePeek RegionalPtr where maybePeek peek ptr = Just <$> peek ptr
 
 -- TODO
 -- -- ** Marshalling lists of storable objects
