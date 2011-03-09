@@ -25,8 +25,6 @@ module Foreign.Marshal.Alloc.Region
       -- * Dynamic allocation
     , malloc
     , mallocBytes
-
-      -- | /TODO:/ Define and export: @realloc@ and @reallocBytes@.
     ) where
 
 

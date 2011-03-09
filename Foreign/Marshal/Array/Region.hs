@@ -18,8 +18,6 @@ module Foreign.Marshal.Array.Region
       mallocArray, mallocArray0
     , allocaArray, allocaArray0
 
-    -- | /TODO:/ Define and export @reallocArray@ and @reallocArray0@
-
       -- * Marshalling
     , peekArray, peekArray0
     , pokeArray, pokeArray0
