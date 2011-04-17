@@ -1,0 +1,17 @@
+The library allows you to allocate memory in a region yielding a regional
+pointer to it. When the region terminates all pointers are automatically
+freed. Most importantly, a pointer can't be returned from the region. So it's
+impossible to reference unallocated memory.
+
+The primary technique used in this package is called "Lightweight monadic
+regions" which was [invented][1] by Oleg Kiselyov and Chung-chieh Shan. See:
+
+This technique is implemented in the [regions] package which is re-exported from
+this library.
+
+This library provides wrappers around all the `Ptr` functions from the
+[`Foreign.*`][foreign] modules of the `base` library.
+
+[1]: http://okmij.org/ftp/Haskell/regions.html#light-weight
+[regions]:  http://hackage.haskell.org/package/regions
+[foreign]: http://hackage.haskell.org/packages/archive/base/latest/doc/html/Foreign.html
