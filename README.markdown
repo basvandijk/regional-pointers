@@ -4,7 +4,7 @@ freed. Most importantly, a pointer can't be returned from the region. So it's
 impossible to reference unallocated memory.
 
 The primary technique used in this package is called "Lightweight monadic
-regions" which was [invented][1] by Oleg Kiselyov and Chung-chieh Shan. See:
+regions" which was [invented][1] by Oleg Kiselyov and Chung-chieh Shan.
 
 This technique is implemented in the [regions] package which is re-exported from
 this library.
