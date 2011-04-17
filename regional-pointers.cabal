@@ -1,5 +1,5 @@
 name:          regional-pointers
-version:       0.6
+version:       0.6.0.1
 cabal-version: >=1.6
 build-type:    Custom
 license:       BSD3
@@ -29,8 +29,8 @@ description:   The library allows you to allocate memory in a region yielding a
                from the @Foreign.*@ modules of the @base@ library.
 
 source-repository head
-  Type:     darcs
-  Location: http://code.haskell.org/~basvandijk/code/regional-pointers
+  Type:     git
+  Location: git://github.com/basvandijk/regional-pointers.git
 
 Library
   GHC-Options: -Wall
