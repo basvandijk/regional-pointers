@@ -29,6 +29,8 @@ description:   The library allows you to allocate memory in a region yielding a
                This library provides wrappers around all the @Ptr@ functions
                from the @Foreign.*@ modules of the @base@ library.
 
+extra-source-files: README.markdown
+
 source-repository head
   Type:     git
   Location: git://github.com/basvandijk/regional-pointers.git
