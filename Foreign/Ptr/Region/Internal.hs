@@ -130,9 +130,9 @@ unsafeRegionalPtr ptr finalize = liftM (RegionalPtr ptr) (onExit finalize)
 
 wrapMalloc ∷ MonadControlIO pr
            ⇒ IO (Ptr α) → RegionT s pr (RegionalPtr α (RegionT s pr))
-wrapMalloc doMalloc = unsafeLiftIOOp_ mask_ $ do
-                        ptr ← liftIO doMalloc
-                        unsafeRegionalPtr ptr (free ptr)
+wrapMalloc doMalloc = unsafeControlIO $ \runInIO → mask_ $ do
+                        ptr ← doMalloc
+                        runInIO $ unsafeRegionalPtr ptr (free ptr)
 
 
 --------------------------------------------------------------------------------
