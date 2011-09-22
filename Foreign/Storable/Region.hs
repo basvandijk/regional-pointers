@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------------
 -- |
 -- Module      :  Foreign.Storable.Region
--- Copyright   :  (c) 2010 Bas van Dijk
+-- Copyright   :  (c) 2010-2011 Bas van Dijk
 -- License     :  BSD3 (see the file LICENSE)
 -- Maintainer  :  Bas van Dijk <v.dijk.bas@gmail.com>
 --
