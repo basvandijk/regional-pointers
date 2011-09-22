@@ -53,7 +53,7 @@ module Foreign.C.String.Region
 -- from base:
 import Data.Bool                         ( Bool )
 import Data.Int                          ( Int )
-import Data.Char                         ( Char, String )
+import Data.Char                         ( Char )
 import Foreign.C.Types                   ( CChar, CWchar )
 import qualified Foreign.C.String as FCS ( peekCString,     peekCStringLen
                                          , newCString,      newCStringLen
@@ -75,6 +75,12 @@ import qualified Foreign.C.String as FCS ( peekCString,     peekCStringLen
 import Foreign.C.String                  ( CString,  CStringLen
                                          , CWString, CWStringLen
                                          )
+#endif
+
+#if MIN_VERSION_base(4,4,0)
+import Data.String                       ( String )
+#else
+import Data.Char                         ( String )
 #endif
 
 -- from base-unicode-symbols:

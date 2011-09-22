@@ -53,11 +53,16 @@ import Control.Monad                     ( return, liftM )
 import Control.Arrow                     ( first )
 import Data.Function                     ( ($), flip )
 import Data.Int                          ( Int )
-import Data.Char                         ( String )
 import System.IO                         ( IO )
 import Foreign.Ptr                       ( Ptr )
 import qualified Foreign.Ptr as FP       ( nullPtr )
 import Foreign.Marshal.Alloc             ( free )
+
+#if MIN_VERSION_base(4,4,0)
+import Data.String                       ( String )
+#else
+import Data.Char                         ( String )
+#endif
 
 #if __GLASGOW_HASKELL__ < 700
 import Control.Monad                     ( (>>=), fail )
@@ -77,20 +82,22 @@ import Control.Monad.Trans.Region        ( RegionT
                                          , LocalRegion, Local
                                          , Dup(dup)
                                          )
-import Control.Monad.Trans.Region.Unsafe ( unsafeStripLocal )
+import Control.Monad.Trans.Region.Unsafe ( unsafeStripLocal
+                                         , unsafeControlIO
+                                         , unsafeLiftIOOp
+                                         , unsafeLiftIOOp_
+                                         )
 
 -- from monad-control:
-import Control.Monad.IO.Control          ( MonadControlIO, controlIO, liftIOOp )
+import Control.Monad.IO.Control          ( MonadControlIO )
 
 #if MIN_VERSION_base(4,3,0)
-import Control.Exception.Control         ( mask_ )
+import Control.Exception         ( mask_ )
 #else
-import Control.Exception.Control         ( block )
-
-mask_ ∷ MonadControlIO m ⇒ m a → m a
+import Control.Exception         ( block )
+mask_ ∷ IO a → IO a
 mask_ = block
 #endif
-
 
 --------------------------------------------------------------------------------
 -- * Regional pointers
@@ -123,7 +130,7 @@ unsafeRegionalPtr ptr finalize = liftM (RegionalPtr ptr) (onExit finalize)
 
 wrapMalloc ∷ MonadControlIO pr
            ⇒ IO (Ptr α) → RegionT s pr (RegionalPtr α (RegionT s pr))
-wrapMalloc doMalloc = mask_ $ do
+wrapMalloc doMalloc = unsafeLiftIOOp_ mask_ $ do
                         ptr ← liftIO doMalloc
                         unsafeRegionalPtr ptr (free ptr)
 
@@ -164,14 +171,14 @@ wrapAlloca ∷ MonadControlIO pr
            ⇒ ((Ptr α → IO (RegionT s pr β)) → IO (RegionT s pr β))
            → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
            → RegionT s pr β
-wrapAlloca doAlloca f = liftIOOp doAlloca $
+wrapAlloca doAlloca f = unsafeLiftIOOp doAlloca $
                           unsafeStripLocal ∘ f ∘ LocalPtr
 
 wrapAlloca2 ∷ MonadControlIO pr
             ⇒ ((γ → Ptr α → IO (RegionT s pr β)) → IO (RegionT s pr β))
             → (∀ sl. γ → LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
             → RegionT s pr β
-wrapAlloca2 doAlloca f = controlIO $ \runInIO →
+wrapAlloca2 doAlloca f = unsafeControlIO $ \runInIO →
                            doAlloca $ \s →
                              runInIO ∘ unsafeStripLocal ∘ f s ∘ LocalPtr
 
@@ -188,7 +195,7 @@ wrapPeekStringLen peekStringLen = liftIO ∘ peekStringLen ∘ first unsafePtr
 wrapNewStringLen ∷ MonadControlIO pr
                  ⇒ IO (Ptr α, Int)
                  → RegionT s pr (RegionalPtr α (RegionT s pr), Int)
-wrapNewStringLen newStringLen = mask_ $ do
+wrapNewStringLen newStringLen = unsafeLiftIOOp_ mask_ $ do
                                   (ptr, len) ← liftIO newStringLen
                                   rPtr ← unsafeRegionalPtr ptr (free ptr)
                                   return (rPtr, len)
@@ -197,7 +204,7 @@ wrapWithStringLen ∷ MonadControlIO pr
                   ⇒ (((Ptr α, Int) → IO (RegionT s pr β)) → IO (RegionT s pr β))
                   → (∀ sl. (LocalPtr α (LocalRegion sl s), Int) → RegionT (Local s) pr β)
                   → RegionT s pr β
-wrapWithStringLen withStringLen f = liftIOOp withStringLen $
+wrapWithStringLen withStringLen f = unsafeLiftIOOp withStringLen $
                                       unsafeStripLocal ∘ f ∘ first LocalPtr
 
 

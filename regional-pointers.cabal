@@ -37,9 +37,9 @@ source-repository head
 
 Library
   GHC-Options: -Wall
-  build-depends: base                 >= 4     && < 4.4
+  build-depends: base                 >= 4     && < 4.5
                , base-unicode-symbols >= 0.1.1 && < 0.3
-               , regions              >= 0.9   && < 0.10
+               , regions              >= 0.10  && < 0.11
                , transformers         >= 0.2   && < 0.3
                , monad-control        >= 0.2   && < 0.3
   exposed-modules: Foreign.Ptr.Region
