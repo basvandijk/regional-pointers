@@ -70,11 +70,9 @@ import Data.Function.Unicode                  ( (∘) )
 -- from transformers:
 import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
--- from monad-control:
-import Control.Monad.IO.Control               ( MonadControlIO )
-
 -- from regions:
 import Control.Monad.Trans.Region             ( RegionT
+                                              , RegionControlIO
                                               , AncestorRegion
                                               , RootRegion
                                               , LocalRegion, Local
@@ -105,7 +103,7 @@ import Foreign.Ptr.Region.Unsafe              ( unsafePtr
 -- exception).
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.with'@.
-with ∷ (Storable α, MonadControlIO pr)
+with ∷ (Storable α, RegionControlIO pr)
      ⇒ α → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β) -- ^
      → RegionT s pr β
 with = wrapAlloca ∘ FMU.with
@@ -115,7 +113,7 @@ with = wrapAlloca ∘ FMU.with
 -- 'sizeOf' method from the instance of 'Storable' for the appropriate type.
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.new'@.
-new ∷ (Storable α, MonadControlIO pr)
+new ∷ (Storable α, RegionControlIO pr)
     ⇒ α → RegionT s pr (RegionalPtr α (RegionT s pr))
 new = wrapMalloc ∘ FMU.new
 

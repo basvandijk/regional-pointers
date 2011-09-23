@@ -77,6 +77,7 @@ import Control.Monad.IO.Class            ( MonadIO, liftIO )
 -- from regions:
 import Control.Monad.Trans.Region.OnExit ( FinalizerHandle, Finalizer, onExit )
 import Control.Monad.Trans.Region        ( RegionT
+                                         , RegionControlIO
                                          , AncestorRegion
                                          , RootRegion
                                          , LocalRegion, Local
@@ -87,9 +88,6 @@ import Control.Monad.Trans.Region.Unsafe ( unsafeStripLocal
                                          , unsafeLiftIOOp
                                          , unsafeLiftIOOp_
                                          )
-
--- from monad-control:
-import Control.Monad.IO.Control          ( MonadControlIO )
 
 #if MIN_VERSION_base(4,3,0)
 import Control.Exception         ( mask_ )
@@ -128,7 +126,7 @@ unsafeRegionalPtr ∷ MonadIO pr
                   → RegionT s pr (RegionalPtr α (RegionT s pr))
 unsafeRegionalPtr ptr finalize = liftM (RegionalPtr ptr) (onExit finalize)
 
-wrapMalloc ∷ MonadControlIO pr
+wrapMalloc ∷ RegionControlIO pr
            ⇒ IO (Ptr α) → RegionT s pr (RegionalPtr α (RegionT s pr))
 wrapMalloc doMalloc = unsafeControlIO $ \runInIO → mask_ $ do
                         ptr ← doMalloc
@@ -167,14 +165,14 @@ newtype NullPtr α (r ∷ * → *) = NullPtr (Ptr α)
 -- Note that a @LocalPtr@ can not be 'dup'licated to a parent region.
 newtype LocalPtr α (r ∷ * → *) = LocalPtr (Ptr α)
 
-wrapAlloca ∷ MonadControlIO pr
+wrapAlloca ∷ RegionControlIO pr
            ⇒ ((Ptr α → IO (RegionT s pr β)) → IO (RegionT s pr β))
            → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
            → RegionT s pr β
 wrapAlloca doAlloca f = unsafeLiftIOOp doAlloca $
                           unsafeStripLocal ∘ f ∘ LocalPtr
 
-wrapAlloca2 ∷ MonadControlIO pr
+wrapAlloca2 ∷ RegionControlIO pr
             ⇒ ((γ → Ptr α → IO (RegionT s pr β)) → IO (RegionT s pr β))
             → (∀ sl. γ → LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
             → RegionT s pr β
@@ -192,7 +190,7 @@ wrapPeekStringLen ∷ (Pointer pointer, pr `AncestorRegion` cr, MonadIO cr)
                   → (pointer α pr, Int) → cr String
 wrapPeekStringLen peekStringLen = liftIO ∘ peekStringLen ∘ first unsafePtr
 
-wrapNewStringLen ∷ MonadControlIO pr
+wrapNewStringLen ∷ RegionControlIO pr
                  ⇒ IO (Ptr α, Int)
                  → RegionT s pr (RegionalPtr α (RegionT s pr), Int)
 wrapNewStringLen newStringLen = unsafeLiftIOOp_ mask_ $ do
@@ -200,7 +198,7 @@ wrapNewStringLen newStringLen = unsafeLiftIOOp_ mask_ $ do
                                   rPtr ← unsafeRegionalPtr ptr (free ptr)
                                   return (rPtr, len)
 
-wrapWithStringLen ∷ MonadControlIO pr
+wrapWithStringLen ∷ RegionControlIO pr
                   ⇒ (((Ptr α, Int) → IO (RegionT s pr β)) → IO (RegionT s pr β))
                   → (∀ sl. (LocalPtr α (LocalRegion sl s), Int) → RegionT (Local s) pr β)
                   → RegionT s pr β

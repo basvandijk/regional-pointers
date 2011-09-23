@@ -1,5 +1,5 @@
 name:          regional-pointers
-version:       0.6.0.1
+version:       0.7
 cabal-version: >=1.6
 build-type:    Custom
 license:       BSD3
@@ -40,9 +40,8 @@ Library
   GHC-Options: -Wall
   build-depends: base                 >= 4     && < 4.5
                , base-unicode-symbols >= 0.1.1 && < 0.3
-               , regions              >= 0.10  && < 0.11
+               , regions              >= 0.11  && < 0.12
                , transformers         >= 0.2   && < 0.3
-               , monad-control        >= 0.2   && < 0.3
   exposed-modules: Foreign.Ptr.Region
                    Foreign.Ptr.Region.Unsafe
                    Foreign.Marshal.Alloc.Region

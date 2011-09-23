@@ -71,11 +71,9 @@ import Data.Function.Unicode                  ( (∘) )
 -- from transformers:
 import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
--- from monad-control:
-import Control.Monad.IO.Control               ( MonadControlIO )
-
 -- from regions:
 import Control.Monad.Trans.Region             ( RegionT
+                                              , RegionControlIO
                                               , AncestorRegion
                                               , LocalRegion, Local
                                               )
@@ -104,19 +102,19 @@ import Foreign.Marshal.Utils.Region           ( new, with )
 -- | Allocate storage for the given number of elements of a storable type.
 --
 -- Like 'malloc', but for multiple elements.
-mallocArray ∷ (Storable α, MonadControlIO pr)
+mallocArray ∷ (Storable α, RegionControlIO pr)
             ⇒ Int → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocArray = wrapMalloc ∘ FMA.mallocArray
 
 -- | Like 'mallocArray', but add an extra position to hold a special termination
 -- element.
-mallocArray0 ∷ (Storable α, MonadControlIO pr)
+mallocArray0 ∷ (Storable α, RegionControlIO pr)
              ⇒ Int → RegionT s pr (RegionalPtr α (RegionT s pr))
 mallocArray0 = wrapMalloc ∘ FMA.mallocArray0
 
 -- | Temporarily allocate space for the given number of elements (like 'alloca',
 -- but for multiple elements).
-allocaArray ∷ (Storable α, MonadControlIO pr)
+allocaArray ∷ (Storable α, RegionControlIO pr)
             ⇒ Int
             → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
             → RegionT s pr β
@@ -124,7 +122,7 @@ allocaArray = wrapAlloca ∘ FMA.allocaArray
 
 -- | Like 'allocaArray', but add an extra position to hold a special termination
 -- element.
-allocaArray0 ∷ (Storable α, MonadControlIO pr)
+allocaArray0 ∷ (Storable α, RegionControlIO pr)
              ⇒ Int
              → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
              → RegionT s pr β
@@ -189,27 +187,27 @@ pokeArray0 m rp xs = liftIO $ FMA.pokeArray0 m (unsafePtr rp) xs
 -- sequence of storable values.
 --
 -- Like 'new', but for multiple elements.
-newArray ∷ (Storable α, MonadControlIO pr)
+newArray ∷ (Storable α, RegionControlIO pr)
          ⇒ [α] → RegionT s pr (RegionalPtr α (RegionT s pr ))
 newArray = wrapMalloc ∘ FMA.newArray
 
 -- | Write a list of storable elements into a newly allocated, consecutive
 -- sequence of storable values, where the end is fixed by the given end marker.
-newArray0 ∷ (Storable α, MonadControlIO pr)
+newArray0 ∷ (Storable α, RegionControlIO pr)
           ⇒ α → [α] → RegionT s pr (RegionalPtr α (RegionT s pr))
 newArray0 marker vals = wrapMalloc (FMA.newArray0 marker vals)
 
 -- | Temporarily store a list of storable values in memory.
 --
 -- Like 'with', but for multiple elements.
-withArray ∷ (Storable α, MonadControlIO pr)
+withArray ∷ (Storable α, RegionControlIO pr)
           ⇒ [α]
           → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
           → RegionT s pr β
 withArray = wrapAlloca ∘ FMA.withArray
 
 -- | Like 'withArray', but a terminator indicates where the array ends.
-withArray0 ∷ (Storable α, MonadControlIO pr)
+withArray0 ∷ (Storable α, RegionControlIO pr)
            ⇒ α
            → [α]
            → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
@@ -219,7 +217,7 @@ withArray0 marker vals = wrapAlloca (FMA.withArray0 marker vals)
 -- | Like 'withArray', but the action gets the number of values as an additional
 -- parameter.
 withArrayLen ∷
-    (Storable α, MonadControlIO pr)
+    (Storable α, RegionControlIO pr)
   ⇒ [α]
   → (∀ sl. Int → LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
   → RegionT s pr β
@@ -227,7 +225,7 @@ withArrayLen = wrapAlloca2 ∘ FMA.withArrayLen
 
 -- | Like 'withArrayLen', but a terminator indicates where the array ends.
 withArrayLen0 ∷
-    (Storable α, MonadControlIO pr)
+    (Storable α, RegionControlIO pr)
   ⇒ α
   → [α]
   → (∀ sl. Int → LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)

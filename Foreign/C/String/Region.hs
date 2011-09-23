@@ -89,11 +89,9 @@ import Data.Function.Unicode             ( (∘) )
 -- from transformers:
 import Control.Monad.IO.Class            ( MonadIO, liftIO )
 
--- from monad-control:
-import Control.Monad.IO.Control          ( MonadControlIO )
-
 -- from regions:
 import Control.Monad.Trans.Region        ( RegionT
+                                         , RegionControlIO
                                          , AncestorRegion
                                          , LocalRegion, Local
                                          )
@@ -152,7 +150,7 @@ peekCStringLen = wrapPeekStringLen FCS.peekCStringLen
 -- The Haskell string may /not/ contain any NUL characters
 --
 -- Wraps: @Foreign.C.String.'FCS.newCString'@.
-newCString ∷ MonadControlIO pr
+newCString ∷ RegionControlIO pr
            ⇒ String → RegionT s pr (RegionalCString RegionalPtr (RegionT s pr))
 newCString = wrapMalloc ∘ FCS.newCString
 
@@ -160,7 +158,7 @@ newCString = wrapMalloc ∘ FCS.newCString
 -- explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCStringLen'@.
-newCStringLen ∷ MonadControlIO pr
+newCStringLen ∷ RegionControlIO pr
               ⇒ String → RegionT s pr (RegionalCStringLen RegionalPtr (RegionT s pr))
 newCStringLen = wrapNewStringLen ∘ FCS.newCStringLen
 
@@ -173,7 +171,7 @@ newCStringLen = wrapNewStringLen ∘ FCS.newCStringLen
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCString'@.
-withCString ∷ MonadControlIO pr
+withCString ∷ RegionControlIO pr
             ⇒ String
             → (∀ sl. RegionalCString LocalPtr (LocalRegion sl s)
                    → RegionT (Local s) pr α
@@ -188,7 +186,7 @@ withCString = wrapAlloca ∘ FCS.withCString
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCStringLen'@.
-withCStringLen ∷ MonadControlIO pr
+withCStringLen ∷ RegionControlIO pr
                ⇒ String
                → (∀ sl. RegionalCStringLen LocalPtr (LocalRegion sl s)
                       → RegionT (Local s) pr α
@@ -224,7 +222,7 @@ peekCAStringLen = wrapPeekStringLen FCS.peekCAStringLen
 -- The Haskell string may /not/ contain any NUL characters
 --
 -- Wraps: @Foreign.C.String.'FCS.newCAString'@.
-newCAString ∷ MonadControlIO pr
+newCAString ∷ RegionControlIO pr
             ⇒ String → RegionT s pr (RegionalCString RegionalPtr (RegionT s pr))
 newCAString = wrapMalloc ∘ FCS.newCAString
 
@@ -232,7 +230,7 @@ newCAString = wrapMalloc ∘ FCS.newCAString
 -- explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCAStringLen'@.
-newCAStringLen ∷ MonadControlIO pr
+newCAStringLen ∷ RegionControlIO pr
                ⇒ String → RegionT s pr (RegionalCStringLen RegionalPtr (RegionT s pr))
 newCAStringLen = wrapNewStringLen ∘ FCS.newCAStringLen
 
@@ -245,7 +243,7 @@ newCAStringLen = wrapNewStringLen ∘ FCS.newCAStringLen
 -- via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCAString'@.
-withCAString ∷ MonadControlIO pr
+withCAString ∷ RegionControlIO pr
              ⇒ String
              → (∀ sl. RegionalCString LocalPtr (LocalRegion sl s)
                     → RegionT (Local s) pr α
@@ -260,7 +258,7 @@ withCAString = wrapAlloca ∘ FCS.withCAString
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCAStringLen'@.
-withCAStringLen ∷ MonadControlIO pr
+withCAStringLen ∷ RegionControlIO pr
                 ⇒ String
                 → (∀ sl. RegionalCStringLen LocalPtr (LocalRegion sl s)
                        → RegionT (Local s) pr α
@@ -305,7 +303,7 @@ peekCWStringLen = wrapPeekStringLen FCS.peekCWStringLen
 -- The Haskell string may /not/ contain any NUL characters.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCWString'@.
-newCWString ∷ MonadControlIO pr
+newCWString ∷ RegionControlIO pr
             ⇒ String → RegionT s pr (RegionalCWString RegionalPtr (RegionT s pr))
 newCWString = wrapMalloc ∘ FCS.newCWString
 
@@ -313,7 +311,7 @@ newCWString = wrapMalloc ∘ FCS.newCWString
 -- with explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCWStringLen'@.
-newCWStringLen ∷ MonadControlIO pr
+newCWStringLen ∷ RegionControlIO pr
                ⇒ String → RegionT s pr (RegionalCWStringLen RegionalPtr (RegionT s pr))
 newCWStringLen = wrapNewStringLen ∘ FCS.newCWStringLen
 
@@ -326,7 +324,7 @@ newCWStringLen = wrapNewStringLen ∘ FCS.newCWStringLen
 --   normally or via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCWString'@.
-withCWString ∷ MonadControlIO pr
+withCWString ∷ RegionControlIO pr
              ⇒ String
              → (∀ sl. RegionalCWString LocalPtr (LocalRegion sl s)
                     → RegionT (Local s) pr α
@@ -343,7 +341,7 @@ withCWString = wrapAlloca ∘ FCS.withCWString
 --   normally or via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCWStringLen'@.
-withCWStringLen ∷ MonadControlIO pr
+withCWStringLen ∷ RegionControlIO pr
                 ⇒ String
                 → (∀ sl. RegionalCWStringLen LocalPtr (LocalRegion sl s)
                        → RegionT (Local s) pr α
