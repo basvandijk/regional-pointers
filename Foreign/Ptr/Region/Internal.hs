@@ -86,7 +86,6 @@ import Control.Monad.Trans.Region        ( RegionT
 import Control.Monad.Trans.Region.Unsafe ( unsafeStripLocal
                                          , unsafeControlIO
                                          , unsafeLiftIOOp
-                                         , unsafeLiftIOOp_
                                          )
 
 #if MIN_VERSION_base(4,3,0)
@@ -193,10 +192,11 @@ wrapPeekStringLen peekStringLen = liftIO ∘ peekStringLen ∘ first unsafePtr
 wrapNewStringLen ∷ RegionControlIO pr
                  ⇒ IO (Ptr α, Int)
                  → RegionT s pr (RegionalPtr α (RegionT s pr), Int)
-wrapNewStringLen newStringLen = unsafeLiftIOOp_ mask_ $ do
-                                  (ptr, len) ← liftIO newStringLen
-                                  rPtr ← unsafeRegionalPtr ptr (free ptr)
-                                  return (rPtr, len)
+wrapNewStringLen newStringLen = unsafeControlIO $ \runInIO → mask_ $ do
+                                  (ptr, len) ← newStringLen
+                                  runInIO $ do
+                                    rPtr ← unsafeRegionalPtr ptr (free ptr)
+                                    return (rPtr, len)
 
 wrapWithStringLen ∷ RegionControlIO pr
                   ⇒ (((Ptr α, Int) → IO (RegionT s pr β)) → IO (RegionT s pr β))
