@@ -1,6 +1,4 @@
 {-# LANGUAGE UnicodeSyntax
-           , NoImplicitPrelude
-           , KindSignatures
            , RankNTypes
            , FlexibleContexts
            , ImpredicativeTypes

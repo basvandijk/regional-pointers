@@ -1,8 +1,6 @@
 {-# LANGUAGE UnicodeSyntax
-           , NoImplicitPrelude
            , CPP
            , RankNTypes
-           , TypeOperators
            , FlexibleContexts
            , ImpredicativeTypes
   #-}

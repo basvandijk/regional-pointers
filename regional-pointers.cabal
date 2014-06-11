@@ -51,3 +51,12 @@ Library
                    Foreign.Storable.Region
                    Foreign.C.String.Region
   other-modules:   Foreign.Ptr.Region.Internal
+  extensions:      NoImplicitPrelude
+                   KindSignatures
+                   TypeOperators
+  other-extensions: ImpredicativeTypes
+                    CPP
+                    FlexibleContexts
+                    RankNTypes
+                    ScopedTypeVariables
+                    GADTs

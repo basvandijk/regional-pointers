@@ -1,7 +1,5 @@
 {-# LANGUAGE CPP
            , UnicodeSyntax
-           , NoImplicitPrelude
-           , KindSignatures
            , RankNTypes
            , FlexibleContexts
   #-}

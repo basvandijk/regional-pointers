@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -------------------------------------------------------------------------------
 -- |
 -- Module      :  Foreign.Ptr.Region.Unsfe

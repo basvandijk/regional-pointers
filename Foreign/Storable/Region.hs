@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, NoImplicitPrelude, TypeOperators #-}
+{-# LANGUAGE UnicodeSyntax #-}
 
 -------------------------------------------------------------------------------
 -- |

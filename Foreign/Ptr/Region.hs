@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, NoImplicitPrelude, KindSignatures #-}
+{-# LANGUAGE UnicodeSyntax, NoImplicitPrelude #-}
 
 -------------------------------------------------------------------------------
 -- |

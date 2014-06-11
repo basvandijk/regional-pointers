@@ -1,5 +1,4 @@
 {-# LANGUAGE UnicodeSyntax
-           , NoImplicitPrelude
            , RankNTypes
            , ScopedTypeVariables
            , FlexibleContexts
