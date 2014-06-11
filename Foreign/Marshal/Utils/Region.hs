@@ -4,6 +4,9 @@
            , RankNTypes
            , GADTs
            , KindSignatures
+           , TypeOperators
+           , FlexibleContexts
+           , ImpredicativeTypes
   #-}
 
 -------------------------------------------------------------------------------
@@ -46,6 +49,8 @@ module Foreign.Marshal.Utils.Region
 --------------------------------------------------------------------------------
 
 -- from base:
+import Prelude                                ( IO )
+import Control.Category                       ( (.) )
 import qualified Foreign.Marshal.Utils as FMU ( with,      new
                                               , fromBool,  toBool
                                               , withMany
@@ -64,15 +69,12 @@ import Data.Functor                           ( (<$>) )
 import Control.Applicative                    ( Applicative, pure )
 import Control.Monad                          ( Monad, return )
 
--- from base-unicode-symbols:
-import Data.Function.Unicode                  ( (∘) )
-
 -- from transformers:
 import Control.Monad.IO.Class                 ( MonadIO, liftIO )
 
 -- from regions:
 import Control.Monad.Trans.Region             ( RegionT
-                                              , RegionControlIO
+                                              , RegionBaseControl
                                               , AncestorRegion
                                               , RootRegion
                                               , LocalRegion, Local
@@ -103,19 +105,19 @@ import Foreign.Ptr.Region.Unsafe              ( unsafePtr
 -- exception).
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.with'@.
-with ∷ (Storable α, RegionControlIO pr)
+with ∷ (Storable α, RegionBaseControl IO pr)
      ⇒ α → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β) -- ^
      → RegionT s pr β
-with = wrapAlloca ∘ FMU.with
+with = wrapAlloca . FMU.with
 
 -- | Allocate a block of memory and marshal a value into it (the combination of
 -- 'malloc' and 'poke').  The size of the area allocated is determined by the
 -- 'sizeOf' method from the instance of 'Storable' for the appropriate type.
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.new'@.
-new ∷ (Storable α, RegionControlIO pr)
+new ∷ (Storable α, RegionBaseControl IO pr)
     ⇒ α → RegionT s pr (RegionalPtr α (RegionT s pr))
-new = wrapMalloc ∘ FMU.new
+new = wrapMalloc . FMU.new
 
 
 -- ** Marshalling of @MaybePointer@ values
@@ -178,7 +180,7 @@ copyBytes ∷ ( AllocatedPointer pointer1
           → pointer2 α pr2 -- ^ Source
           → Int            -- ^ Number of bytes to copy
           → cr ()
-copyBytes pointer1 pointer2 = liftIO ∘ FMU.copyBytes (unsafePtr pointer1)
+copyBytes pointer1 pointer2 = liftIO . FMU.copyBytes (unsafePtr pointer1)
                                                      (unsafePtr pointer2)
 
 -- | Copies the given number of bytes from the second area (source) into the
@@ -195,7 +197,7 @@ moveBytes ∷ ( AllocatedPointer pointer1
           → pointer2 α pr2 -- ^ Source
           → Int            -- ^ Number of bytes to move
           → cr ()
-moveBytes pointer1 pointer2 = liftIO ∘ FMU.moveBytes (unsafePtr pointer1)
+moveBytes pointer1 pointer2 = liftIO . FMU.moveBytes (unsafePtr pointer1)
                                                      (unsafePtr pointer2)
 
 

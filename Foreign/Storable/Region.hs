@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, NoImplicitPrelude #-}
+{-# LANGUAGE UnicodeSyntax, NoImplicitPrelude, TypeOperators #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -110,7 +110,7 @@ pokeByteOff = unsafeWrap3 FS.pokeByteOff
 --
 -- Wraps: @Foreign.Storable.'FS.peek'@.
 peek ∷ ( AllocatedPointer pointer, Storable α
-       , pr `AncestorRegion` cr, MonadIO cr
+       , AncestorRegion pr cr, MonadIO cr
        )
      ⇒ pointer α pr → cr α
 peek = unsafeWrap FS.peek
@@ -120,7 +120,7 @@ peek = unsafeWrap FS.peek
 --
 -- Wraps: @Foreign.Storable.'FS.poke'@.
 poke ∷ ( AllocatedPointer pointer, Storable α
-       , pr `AncestorRegion` cr, MonadIO cr
+       , AncestorRegion pr cr, MonadIO cr
        )
      ⇒ pointer α pr → α → cr ()
 poke = unsafeWrap2 FS.poke
