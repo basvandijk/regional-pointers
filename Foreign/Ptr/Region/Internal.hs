@@ -60,15 +60,7 @@ import Foreign.Ptr                       ( Ptr )
 import qualified Foreign.Ptr as FP       ( nullPtr )
 import Foreign.Marshal.Alloc             ( free )
 
-#if MIN_VERSION_base(4,4,0)
 import Data.String                       ( String )
-#else
-import Data.Char                         ( String )
-#endif
-
-#if __GLASGOW_HASKELL__ < 700
-import Control.Monad                     ( (>>=), fail )
-#endif
 
 -- from transformers:
 import Control.Monad.IO.Class            ( MonadIO, liftIO )

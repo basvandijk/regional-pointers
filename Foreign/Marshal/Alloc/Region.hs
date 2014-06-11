@@ -20,9 +20,7 @@ module Foreign.Marshal.Alloc.Region
       LocalPtr
     , alloca
     , allocaBytes
-#if MIN_VERSION_base(4,3,0)
     , allocaBytesAligned
-#endif
       -- * Dynamic allocation
     , malloc
     , mallocBytes
@@ -40,10 +38,8 @@ import Prelude                                ( IO )
 
 import qualified Foreign.Marshal.Alloc as FMA ( alloca, allocaBytes
                                               , malloc, mallocBytes
+                                              , allocaBytesAligned
                                               )
-#if MIN_VERSION_base(4,3,0)
-import qualified Foreign.Marshal.Alloc as FMA ( allocaBytesAligned )
-#endif
 
 #if __HADDOCK__
 import Foreign.Storable ( sizeOf )
@@ -93,7 +89,6 @@ allocaBytes ∷ RegionBaseControl IO pr
             → RegionT s pr β
 allocaBytes size = wrapAlloca (FMA.allocaBytes size)
 
-#if MIN_VERSION_base(4,3,0)
 -- | This should provide a safer replacement for:
 -- @Foreign.Marshal.Alloc.'FMA.allocaBytesAligned'@.
 allocaBytesAligned ∷
@@ -102,7 +97,6 @@ allocaBytesAligned ∷
   → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
   → RegionT s pr β
 allocaBytesAligned size align = wrapAlloca (FMA.allocaBytesAligned size align)
-#endif
 
 
 --------------------------------------------------------------------------------

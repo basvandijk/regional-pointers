@@ -32,10 +32,9 @@ module Foreign.C.String.Region
          -- * Using 8-bit characters
        , FCS.castCharToCChar,  FCS.castCCharToChar
 
-#if MIN_VERSION_base(4,3,0)
        , FCS.castCharToCUChar, FCS.castCUCharToChar
        , FCS.castCharToCSChar, FCS.castCSCharToChar
-#endif
+
        , peekCAString,         peekCAStringLen
        , newCAString,          newCAStringLen
        , withCAString,         withCAStringLen
