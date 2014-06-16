@@ -1,8 +1,8 @@
-{-# LANGUAGE CPP
-           , UnicodeSyntax
+{-# LANGUAGE NoImplicitPrelude
            , RankNTypes
            , FlexibleContexts
-  #-}
+           , TypeFamilies
+           , TypeOperators #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -48,10 +48,10 @@ module Foreign.Ptr.Region.Internal
 --------------------------------------------------------------------------------
 
 -- from base:
-import Prelude                           ( (.) )
+import Control.Exception                 ( mask_ )
 import Control.Monad                     ( return, liftM )
 import Control.Arrow                     ( first )
-import Data.Function                     ( ($), flip )
+import Data.Function                     ( ($), (.), flip )
 import Data.Int                          ( Int )
 import System.IO                         ( IO )
 import Foreign.Ptr                       ( Ptr )
@@ -60,12 +60,8 @@ import Foreign.Marshal.Alloc             ( free )
 
 import Data.String                       ( String )
 
--- from transformers:
-import Control.Monad.IO.Class            ( MonadIO, liftIO )
+-- from transformers-base:
 import Control.Monad.Base                ( MonadBase, liftBase )
-
--- from exceptions:
-import Control.Monad.Catch               ( mask_ )
 
 -- from regions:
 import Control.Monad.Trans.Region.OnExit ( FinalizerHandle, Finalizer, onExit )
@@ -79,7 +75,7 @@ import Control.Monad.Trans.Region        ( RegionT
 import Control.Monad.Trans.Region.Unsafe ( unsafeStripLocal
                                          , unsafeControl
                                          , unsafeLiftBaseOp
-                                         , RegionStM
+                                         , RegionBaseControl(..)
                                          )
 
 --------------------------------------------------------------------------------
@@ -91,9 +87,9 @@ A regional pointer to memory.
 
 This should provide a safer replacement for @Foreign.Ptr.'Ptr'@
 -}
-data RegionalPtr α (r ∷ * → *) = RegionalPtr !(Ptr α) !(FinalizerHandle r)
+data RegionalPtr a (r :: * -> *) = RegionalPtr !(Ptr a) !(FinalizerHandle r)
 
-instance Dup (RegionalPtr α) where
+instance Dup (RegionalPtr a) where
     dup (RegionalPtr ptr ch) = liftM (RegionalPtr ptr) (dup ch)
 
 {-|
@@ -105,16 +101,19 @@ This function is unsafe because this library can't guarantee that the
 finalizer will actually finalize the pointer (suppose having @return ()@ as
 the finalizer). You have to verify the correct finalisation yourself.
 -}
-unsafeRegionalPtr ∷ MonadBase IO pr
-                  ⇒ Ptr α
-                  → Finalizer
-                  → RegionT s pr (RegionalPtr α (RegionT s pr))
+unsafeRegionalPtr :: ( region ~ RegionT s pr, MonadBase IO pr)
+                  => Ptr a
+                  -> Finalizer
+                  -> region (RegionalPtr a region)
 unsafeRegionalPtr ptr finalize = liftM (RegionalPtr ptr) (onExit finalize)
 
-wrapMalloc ∷ (RegionBaseControl IO pr, MonadBase IO pr)
-           ⇒ IO (Ptr α) → RegionT s pr (RegionalPtr α (RegionT s pr))
-wrapMalloc doMalloc = unsafeControl $ \runInIO → mask_ $ do
-                        ptr ← doMalloc
+wrapMalloc :: ( region ~ RegionT s pr
+              , RegionBaseControl IO pr
+              , MonadBase IO pr
+              )
+           => IO (Ptr a) -> region (RegionalPtr a region)
+wrapMalloc doMalloc = unsafeControl $ \runInIO -> mask_ $ do
+                        ptr <- doMalloc
                         runInIO $ unsafeRegionalPtr ptr (liftBase $ free ptr)
 
 
@@ -134,10 +133,10 @@ Finally note that the region parameter of the 'NullPtr' is set to
 'RootRegion' which is the ancestor of any region.
 This allows 'nullPtr' to be used in any region.
 -}
-nullPtr ∷ NullPtr α RootRegion
+nullPtr :: NullPtr a RootRegion
 nullPtr = NullPtr FP.nullPtr
 
-newtype NullPtr α (r ∷ * → *) = NullPtr (Ptr α)
+newtype NullPtr a (r :: * -> *) = NullPtr (Ptr a)
 
 
 --------------------------------------------------------------------------------
@@ -148,21 +147,21 @@ newtype NullPtr α (r ∷ * → *) = NullPtr (Ptr α)
 -- by one of the @alloca@-like functions.
 --
 -- Note that a @LocalPtr@ can not be 'dup'licated to a parent region.
-newtype LocalPtr α (r ∷ * → *) = LocalPtr (Ptr α)
+newtype LocalPtr a (r :: * -> *) = LocalPtr (Ptr a)
 
-wrapAlloca ∷ RegionBaseControl m pr
-           ⇒ ((Ptr α → m (RegionStM (RegionT s pr) β)) → m (RegionStM (RegionT s pr) β))
-           → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
-           → RegionT s pr β
+wrapAlloca :: (RegionBaseControl m pr)
+           => ((Ptr a -> m (RegionStM (RegionT s pr) b)) -> m (RegionStM (RegionT s pr) b))
+           -> (forall sl. LocalPtr a (LocalRegion sl s) -> RegionT (Local s) pr b)
+           -> RegionT s pr b
 wrapAlloca doAlloca f = unsafeLiftBaseOp doAlloca $
                           unsafeStripLocal . f . LocalPtr
 
-wrapAlloca2 ∷ RegionBaseControl m pr
-            => ((γ → Ptr α → m (RegionStM (RegionT s pr) β)) → m (RegionStM (RegionT s pr) β))
-            -> (∀ sl. γ → LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
-            -> RegionT s pr β
-wrapAlloca2 doAlloca f = unsafeControl $ \runInIO →
-                           doAlloca $ \s →
+wrapAlloca2 :: (RegionBaseControl m pr)
+            => ((c -> Ptr a -> m (RegionStM (RegionT s pr) b)) -> m (RegionStM (RegionT s pr) b))
+            -> (forall sl. c -> LocalPtr a (LocalRegion sl s) -> RegionT (Local s) pr b)
+            -> RegionT s pr b
+wrapAlloca2 doAlloca f = unsafeControl $ \runInIO ->
+                           doAlloca $ \s ->
                              runInIO . unsafeStripLocal . f s . LocalPtr
 
 
@@ -170,24 +169,30 @@ wrapAlloca2 doAlloca f = unsafeControl $ \runInIO →
 -- * Wrapping @CStringLen@ operations
 --------------------------------------------------------------------------------
 
-wrapPeekStringLen ∷ (Pointer pointer, AncestorRegion pr cr, MonadBase m cr)
-                  ⇒ ((Ptr α, Int) → m String)
-                  → (pointer α pr, Int) → cr String
+wrapPeekStringLen :: ( Pointer pointer
+                     , pr `AncestorRegion` cr
+                     , MonadBase m cr
+                     )
+                  => ((Ptr a, Int) -> m String)
+                  -> (pointer a pr, Int) -> cr String
 wrapPeekStringLen peekStringLen = liftBase . peekStringLen . first unsafePtr
 
-wrapNewStringLen ∷ (RegionBaseControl IO pr, MonadBase IO pr, MonadIO pr)
-                 ⇒ IO (Ptr α, Int)
-                 → RegionT s pr (RegionalPtr α (RegionT s pr), Int)
-wrapNewStringLen newStringLen = unsafeControl $ \runInIO → mask_ $ do
-                                  (ptr, len) ← newStringLen
+wrapNewStringLen :: ( region ~ RegionT s pr
+                    , RegionBaseControl IO pr
+                    , MonadBase IO pr
+                    )
+                 => IO (Ptr a, Int)
+                 -> region (RegionalPtr a region, Int)
+wrapNewStringLen newStringLen = unsafeControl $ \runInIO -> mask_ $ do
+                                  (ptr, len) <- newStringLen
                                   runInIO $ do
-                                    rPtr ← unsafeRegionalPtr ptr ((liftBase free) ptr)
+                                    rPtr <- unsafeRegionalPtr ptr ((liftBase free) ptr)
                                     return (rPtr, len)
 
-wrapWithStringLen ∷ RegionBaseControl m pr
-                  ⇒ (((Ptr α, Int) → m (RegionStM (RegionT s pr) β)) → m (RegionStM (RegionT s pr) β))
-                  → (∀ sl. (LocalPtr α (LocalRegion sl s), Int) → RegionT (Local s) pr β)
-                  → RegionT s pr β
+wrapWithStringLen :: (RegionBaseControl m pr)
+                  => (((Ptr a, Int) -> m (RegionStM (RegionT s pr) b)) -> m (RegionStM (RegionT s pr) b))
+                  -> (forall sl. (LocalPtr a (LocalRegion sl s), Int) -> RegionT (Local s) pr b)
+                  -> RegionT s pr b
 wrapWithStringLen withStringLen f = unsafeLiftBaseOp withStringLen $
                                       unsafeStripLocal . f . first LocalPtr
 
@@ -196,16 +201,16 @@ wrapWithStringLen withStringLen f = unsafeLiftBaseOp withStringLen $
 -- * Utility functions for lifting operations on Ptrs to RegionalPtrs
 --------------------------------------------------------------------------------
 
-class Pointer (pointer ∷ * → (* → *) → *) where
+class Pointer (pointer :: * -> (* -> *) -> *) where
     -- | Retrieve the native pointer from a regional pointer.
     --
     -- This function is unsafe because it allows you to both @free@ the pointer
     -- before the region terminates and use the pointer outside the region when it
     -- is already freed.
-    unsafePtr ∷ pointer α r → Ptr α
+    unsafePtr :: pointer a r -> Ptr a
 
     -- | Apply a /pure/ function to the inner pointer of a regional pointer.
-    mapPointer ∷ (Ptr α → Ptr β) → (pointer α r → pointer β r)
+    mapPointer :: (Ptr a -> Ptr b) -> (pointer a r -> pointer b r)
 
 instance Pointer RegionalPtr where
     unsafePtr    (RegionalPtr ptr _)  = ptr
@@ -219,41 +224,38 @@ instance Pointer LocalPtr where
     unsafePtr    (LocalPtr ptr) = ptr
     mapPointer f (LocalPtr ptr) = LocalPtr (f ptr)
 
-unsafeWrap ∷ (MonadIO m, Pointer pointer)
-           ⇒ (Ptr     α   → IO β)
-           → (pointer α r → m  β)
-unsafeWrap f pointer = liftIO $ f (unsafePtr pointer)
+unsafeWrap :: (MonadBase IO m, Pointer pointer)
+           => (Ptr     a   -> IO b)
+           -> (pointer a r -> m  b)
+unsafeWrap f pointer = liftBase $ f (unsafePtr pointer)
 
-unsafeWrap2 ∷ (MonadIO m, Pointer pointer)
-            ⇒ (Ptr     α   → γ → IO β)
-            → (pointer α r → γ → m  β)
-unsafeWrap2 f pointer x = liftIO $ f (unsafePtr pointer) x
+unsafeWrap2 :: (MonadBase IO m, Pointer pointer)
+            => (Ptr     a   -> c -> IO b)
+            -> (pointer a r -> c -> m  b)
+unsafeWrap2 f pointer x = liftBase $ f (unsafePtr pointer) x
 
-unsafeWrap3 ∷ (MonadIO m, Pointer pointer)
-            ⇒ (Ptr     α   → γ → δ → IO β)
-            → (pointer α r → γ → δ → m  β)
-unsafeWrap3 f pointer x y = liftIO $ f (unsafePtr pointer) x y
+unsafeWrap3 :: (MonadBase IO m, Pointer pointer)
+            => (Ptr     a   -> c -> d -> IO b)
+            -> (pointer a r -> c -> d -> m  b)
+unsafeWrap3 f pointer x y = liftBase $ f (unsafePtr pointer) x y
 
-unsafeWrap2flp ∷ (MonadIO m, Pointer pointer)
-               ⇒ (γ → Ptr     α   → IO β)
-               → (γ → pointer α r → m  β)
+unsafeWrap2flp :: (MonadBase IO m, Pointer pointer)
+               => (c -> Ptr     a   -> IO b)
+               -> (c -> pointer a r -> m  b)
 unsafeWrap2flp = flip . unsafeWrap2 . flip
 
 --------------------------------------------------------------------------------
 -- * Allocated pointers
 --------------------------------------------------------------------------------
 
-class Pointer pointer ⇒ PrivateAllocatedPointer pointer
+class Pointer pointer => PrivateAllocatedPointer pointer
 
 -- | Class of pointers which point to allocated memory. 'NullPtr' is the only
 -- pointer which is not an instance of this class.
 --
 -- The super class 'PrivateAllocatedPointer' is not exported by this module
 -- which ensures you can't accidentally make 'NullPtr' an instance of this class.
-class PrivateAllocatedPointer pointer ⇒ AllocatedPointer pointer
+class PrivateAllocatedPointer pointer => AllocatedPointer pointer
 
 instance PrivateAllocatedPointer RegionalPtr; instance AllocatedPointer RegionalPtr
 instance PrivateAllocatedPointer LocalPtr;    instance AllocatedPointer LocalPtr
-
-
--- The End ---------------------------------------------------------------------

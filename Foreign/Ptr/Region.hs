@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -61,7 +61,7 @@ import Foreign.Ptr.Region.Internal ( RegionalPtr
 -- | The @castPtr@ function casts a pointer from one type to another.
 --
 -- Wraps: @Foreign.Ptr.@'FP.castPtr'
-castPtr ∷ Pointer pointer ⇒ pointer α r → pointer β r
+castPtr :: (Pointer pointer) => pointer a r -> pointer b r
 castPtr = mapPointer FP.castPtr
 
 -- | Given an arbitrary address and an alignment constraint, @alignPtr@ yields
@@ -70,14 +70,14 @@ castPtr = mapPointer FP.castPtr
 -- is idempotent.
 --
 -- Wraps: @Foreign.Ptr.@'FP.alignPtr'
-alignPtr ∷ AllocatedPointer pointer ⇒ pointer α r → Int → pointer α r
-alignPtr pointer n = mapPointer (\ptr → FP.alignPtr ptr n) pointer
+alignPtr :: (AllocatedPointer pointer) => pointer a r -> Int -> pointer a r
+alignPtr pointer n = mapPointer (\ptr -> FP.alignPtr ptr n) pointer
 
 -- | Advances the given address by the given offset in bytes.
 --
 -- Wraps: @Foreign.Ptr.@'FP.plusPtr'
-plusPtr ∷ AllocatedPointer pointer ⇒ pointer α r → Int → pointer β r
-plusPtr pointer n = mapPointer (\ptr → FP.plusPtr ptr n) pointer
+plusPtr :: (AllocatedPointer pointer) => pointer a r -> Int -> pointer b r
+plusPtr pointer n = mapPointer (\ptr -> FP.plusPtr ptr n) pointer
 
 -- | Computes the offset required to get from the second to the first
 -- argument. We have
@@ -85,9 +85,6 @@ plusPtr pointer n = mapPointer (\ptr → FP.plusPtr ptr n) pointer
 -- > p2 == p1 `plusPtr` (p2 `minusPtr` p1)
 --
 -- Wraps: @Foreign.Ptr.@'FP.minusPtr'
-minusPtr ∷ AllocatedPointer pointer ⇒ pointer α r1 → pointer β r2 → Int
+minusPtr :: (AllocatedPointer pointer) => pointer a r1 -> pointer b r2 -> Int
 minusPtr pointer1 pointer2 = FP.minusPtr (unsafePtr pointer1)
                                          (unsafePtr pointer2)
-
-
--- The End ---------------------------------------------------------------------

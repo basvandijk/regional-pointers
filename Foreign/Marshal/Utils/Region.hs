@@ -1,11 +1,11 @@
-{-# LANGUAGE CPP
-           , UnicodeSyntax
+{-# LANGUAGE NoImplicitPrelude
+           , CPP
            , RankNTypes
            , GADTs
            , KindSignatures
            , FlexibleContexts
            , ImpredicativeTypes
-  #-}
+           , TypeOperators #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -47,7 +47,7 @@ module Foreign.Marshal.Utils.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Prelude                                ( IO )
+import System.IO                              ( IO )
 import Control.Category                       ( (.) )
 import qualified Foreign.Marshal.Utils as FMU ( with,      new
                                               , fromBool,  toBool
@@ -67,8 +67,8 @@ import Data.Functor                           ( (<$>) )
 import Control.Applicative                    ( Applicative, pure )
 import Control.Monad                          ( Monad, return )
 
--- from transformers:
-import Control.Monad.IO.Class                 ( MonadIO, liftIO )
+-- from transformers-base:
+import Control.Monad.Base                     ( MonadBase, liftBase )
 
 -- from regions:
 import Control.Monad.Trans.Region             ( RegionT
@@ -103,9 +103,10 @@ import Foreign.Ptr.Region.Unsafe              ( unsafePtr
 -- exception).
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.with'@.
-with ∷ (Storable α, RegionBaseControl IO pr)
-     ⇒ α → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β) -- ^
-     → RegionT s pr β
+with :: (Storable a, RegionBaseControl IO pr)
+     => a -> (forall sl. LocalPtr a (LocalRegion sl s)
+             -> RegionT (Local s) pr b) -- ^
+     -> RegionT s pr b
 with = wrapAlloca . FMU.with
 
 -- | Allocate a block of memory and marshal a value into it (the combination of
@@ -113,27 +114,27 @@ with = wrapAlloca . FMU.with
 -- 'sizeOf' method from the instance of 'Storable' for the appropriate type.
 --
 -- This provides a safer replacement for @Foreign.Marshal.Utils.'FMU.new'@.
-new ∷ (Storable α, RegionBaseControl IO pr)
-    ⇒ α → RegionT s pr (RegionalPtr α (RegionT s pr))
+new :: (region ~ RegionT s pr, RegionBaseControl IO pr, Storable a)
+    => a -> region (RegionalPtr a region)
 new = wrapMalloc . FMU.new
 
 
 -- ** Marshalling of @MaybePointer@ values
 
--- | A @'MaybePointer' &#945;@ corresponds to a @'Maybe' &#945;@
+-- | A @'MaybePointer' a@ corresponds to a @'Maybe' a@
 -- but additionally introduces some type equalities to the type-checker.
-data MaybePointer (α ∷ *) (pointer ∷ *) (β ∷ *) (r ∷ * → *) where
-    NullPointer ∷     MaybePointer α (NullPtr     β RootRegion) β RootRegion
-    JustPointer ∷ α → MaybePointer α (RegionalPtr β r)          β r
+data MaybePointer (a :: *) (pointer :: *) (b :: *) (r :: * -> *) where
+    NullPointer ::      MaybePointer a (NullPtr     b RootRegion) b RootRegion
+    JustPointer :: a -> MaybePointer a (RegionalPtr b r)          b r
 
 -- | Allocate storage and marshal a storable value wrapped into a 'MaybePointer'.
 --
 -- The 'nullPtr' is used to represent 'NullPointer'.
 --
 -- Alternative for 'FMU.maybeNew'.
-maybeNew ∷ Monad m
-         ⇒ (α → m (RegionalPtr β r)) -- ^
-         → (MaybePointer α pointer β r → m pointer)
+maybeNew :: Monad m
+         => (a -> m (RegionalPtr b r)) -- ^
+         -> (MaybePointer a pointer b r -> m pointer)
 maybeNew _  NullPointer    = return nullPtr
 maybeNew f (JustPointer x) = f x
 
@@ -141,19 +142,19 @@ maybeNew f (JustPointer x) = f x
 -- into a 'MaybePointer', using 'nullPtr' to represent 'NoPointer'.
 --
 -- Alternative for 'FMU.maybeWith'
-maybeWith ∷ (α →                          (pointer → m γ) → m γ) -- ^
-          → (MaybePointer α pointer β r → (pointer → m γ) → m γ)
+maybeWith :: (a ->                          (pointer -> m c) -> m c) -- ^
+          -> (MaybePointer a pointer b r -> (pointer -> m c) -> m c)
 maybeWith _  NullPointer    g = g nullPtr
 maybeWith f (JustPointer x) g = f x g
 
-class MaybePeek (pointer ∷ * → (* → *) → *) where
+class MaybePeek (pointer :: * -> (* -> *) -> *) where
     -- | Convert a @peek@ combinator into a one returning 'Nothing'
     -- if applied to a 'nullPtr'.
     --
     -- Alternative for 'FMU.maybePeek'.
-    maybePeek ∷ Applicative m
-              ⇒ (pointer α r → m β) -- ^
-              → (pointer α r → m (Maybe β))
+    maybePeek :: Applicative m
+              => (pointer a r -> m b) -- ^
+              -> (pointer a r -> m (Maybe b))
 
 instance MaybePeek NullPtr     where maybePeek _    _   = pure Nothing
 instance MaybePeek RegionalPtr where maybePeek peek ptr = Just <$> peek ptr
@@ -168,35 +169,32 @@ instance MaybePeek RegionalPtr where maybePeek peek ptr = Just <$> peek ptr
 -- first (destination); the copied areas may /not/ overlap
 --
 -- Wraps: @Foreign.Marshal.Utils.'FMU.copyBytes'@.
-copyBytes ∷ ( AllocatedPointer pointer1
-            , AllocatedPointer pointer2
-            , pr1 `AncestorRegion` cr
-            , pr2 `AncestorRegion` cr
-            , MonadIO cr
-            )
-          ⇒ pointer1 α pr1 -- ^ Destination
-          → pointer2 α pr2 -- ^ Source
-          → Int            -- ^ Number of bytes to copy
-          → cr ()
-copyBytes pointer1 pointer2 = liftIO . FMU.copyBytes (unsafePtr pointer1)
-                                                     (unsafePtr pointer2)
+copyBytes :: ( AllocatedPointer pointer1
+             , AllocatedPointer pointer2
+             , pr1 `AncestorRegion` cr
+             , pr2 `AncestorRegion` cr
+             , MonadBase IO cr
+             )
+          => pointer1 a pr1 -- ^ Destination
+          -> pointer2 a pr2 -- ^ Source
+          -> Int            -- ^ Number of bytes to copy
+          -> cr ()
+copyBytes pointer1 pointer2 = liftBase . FMU.copyBytes (unsafePtr pointer1)
+                                                       (unsafePtr pointer2)
 
 -- | Copies the given number of bytes from the second area (source) into the
 -- first (destination); the copied areas /may/ overlap
 --
 -- Wraps: @Foreign.Marshal.Utils.'FMU.moveBytes'@.
-moveBytes ∷ ( AllocatedPointer pointer1
-            , AllocatedPointer pointer2
-            , pr1 `AncestorRegion` cr
-            , pr2 `AncestorRegion` cr
-            , MonadIO cr
-            )
-          ⇒ pointer1 α pr1 -- ^ Destination
-          → pointer2 α pr2 -- ^ Source
-          → Int            -- ^ Number of bytes to move
-          → cr ()
-moveBytes pointer1 pointer2 = liftIO . FMU.moveBytes (unsafePtr pointer1)
-                                                     (unsafePtr pointer2)
-
-
--- The End ---------------------------------------------------------------------
+moveBytes :: ( AllocatedPointer pointer1
+             , AllocatedPointer pointer2
+             , pr1 `AncestorRegion` cr
+             , pr2 `AncestorRegion` cr
+             , MonadBase IO cr
+             )
+          => pointer1 a pr1 -- ^ Destination
+          -> pointer2 a pr2 -- ^ Source
+          -> Int            -- ^ Number of bytes to move
+          -> cr ()
+moveBytes pointer1 pointer2 = liftBase . FMU.moveBytes (unsafePtr pointer1)
+                                                       (unsafePtr pointer2)

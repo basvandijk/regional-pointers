@@ -1,9 +1,11 @@
-{-# LANGUAGE UnicodeSyntax
+{-# LANGUAGE NoImplicitPrelude
            , RankNTypes
            , FlexibleContexts
            , ImpredicativeTypes
            , CPP
-  #-}
+           , FlexibleContexts
+           , TypeFamilies
+           , TypeOperators #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -50,7 +52,6 @@ module Foreign.C.String.Region
 --------------------------------------------------------------------------------
 
 -- from base:
-import Prelude                           ( IO )
 import Control.Category                  ( (.) )
 import Data.Bool                         ( Bool )
 import Data.Int                          ( Int )
@@ -75,12 +76,11 @@ import Foreign.C.String                  ( CString,  CStringLen
                                          , CWString, CWStringLen
                                          )
 #endif
-
 import Data.String                       ( String )
+import System.IO                         ( IO )
 
--- from transformers:
-import Control.Monad.IO.Class            ( MonadIO, liftIO )
-import Control.Monad.Base                ( MonadBase )
+-- from transformers-base:
+import Control.Monad.Base                ( MonadBase, liftBase )
 
 -- from regions:
 import Control.Monad.Trans.Region        ( RegionT
@@ -110,7 +110,7 @@ import Foreign.Ptr.Region.Unsafe         ( wrapMalloc, wrapAlloca
 -- terminated by a NUL.
 --
 -- This should provide a safer replacement for @Foreign.C.String.'CString'@.
-type RegionalCString (pointer ∷ * → (* → *) → *) r = pointer CChar r
+type RegionalCString (pointer :: * -> (* -> *) -> *) r = pointer CChar r
 
 -- | Handy type synonym for a regional pointer to an array of C characters which
 -- is paired with the length of the array instead of terminated by a NUL.
@@ -127,15 +127,21 @@ type RegionalCStringLen pointer r = (RegionalCString pointer r, Int)
 -- | Marshal a NUL terminated C string into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCString'@
-peekCString ∷ (AllocatedPointer pointer, AncestorRegion pr cr, MonadIO cr, MonadBase IO pr)
-             ⇒ RegionalCString pointer pr → cr String
+peekCString :: ( AllocatedPointer pointer
+               , pr `AncestorRegion` cr
+               , MonadBase IO cr
+               )
+            => RegionalCString pointer pr -> cr String
 peekCString = unsafeWrap FCS.peekCString
 
 -- | Marshal a C string with explicit length into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCStringLen'@.
-peekCStringLen ∷ (AllocatedPointer pointer, AncestorRegion pr cr, MonadIO cr, MonadBase IO cr)
-               ⇒ RegionalCStringLen pointer pr → cr String
+peekCStringLen :: ( AllocatedPointer pointer
+                  , pr `AncestorRegion` cr
+                  , MonadBase IO cr
+                  )
+               => RegionalCStringLen pointer pr -> cr String
 peekCStringLen = wrapPeekStringLen FCS.peekCStringLen
 
 -- | Marshal a Haskell string into a NUL terminated C string.
@@ -143,16 +149,22 @@ peekCStringLen = wrapPeekStringLen FCS.peekCStringLen
 -- The Haskell string may /not/ contain any NUL characters
 --
 -- Wraps: @Foreign.C.String.'FCS.newCString'@.
-newCString ∷ (RegionBaseControl IO pr, MonadBase IO pr, MonadIO pr)
-           ⇒ String → RegionT s pr (RegionalCString RegionalPtr (RegionT s pr))
+newCString :: ( region ~ RegionT s pr
+              , RegionBaseControl IO pr
+              , MonadBase IO pr
+              )
+           => String -> region (RegionalCString RegionalPtr region)
 newCString = wrapMalloc . FCS.newCString
 
 -- | Marshal a Haskell string into a C string (ie, character array) with
 -- explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCStringLen'@.
-newCStringLen ∷ (RegionBaseControl IO pr, MonadBase IO pr, MonadIO pr)
-              ⇒ String → RegionT s pr (RegionalCStringLen RegionalPtr (RegionT s pr))
+newCStringLen :: ( region ~ RegionT s pr
+                 , RegionBaseControl IO pr
+                 , MonadBase IO pr
+                 )
+              => String -> region (RegionalCStringLen RegionalPtr region)
 newCStringLen = wrapNewStringLen . FCS.newCStringLen
 
 -- | Marshal a Haskell string into a NUL terminated C string using temporary
@@ -164,12 +176,12 @@ newCStringLen = wrapNewStringLen . FCS.newCStringLen
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCString'@.
-withCString ∷ RegionBaseControl IO pr
-            ⇒ String
-            → (∀ sl. RegionalCString LocalPtr (LocalRegion sl s)
-                   → RegionT (Local s) pr α
-              )
-            → RegionT s pr α
+withCString :: RegionBaseControl IO pr
+            => String
+            -> (forall sl. RegionalCString LocalPtr (LocalRegion sl s)
+               -> RegionT (Local s) pr a
+               )
+            -> RegionT s pr a
 withCString = wrapAlloca . FCS.withCString
 
 -- | Marshal a Haskell string into a C string (ie, character array) in temporary
@@ -179,17 +191,17 @@ withCString = wrapAlloca . FCS.withCString
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCStringLen'@.
-withCStringLen ∷ RegionBaseControl IO pr
-               ⇒ String
-               → (∀ sl. RegionalCStringLen LocalPtr (LocalRegion sl s)
-                      → RegionT (Local s) pr α
-                 )
-               → RegionT s pr α
+withCStringLen :: RegionBaseControl IO pr
+               => String
+               -> (forall sl. RegionalCStringLen LocalPtr (LocalRegion sl s)
+                  -> RegionT (Local s) pr a
+                  )
+               -> RegionT s pr a
 withCStringLen = wrapWithStringLen . FCS.withCStringLen
 
--- | Generalizes @Foreign.C.String.'FCS.charIsRepresentable'@ to any 'MonadIO'.
-charIsRepresentable ∷ MonadIO m ⇒ Char → m Bool
-charIsRepresentable = liftIO . FCS.charIsRepresentable
+-- | Generalizes @Foreign.C.String.'FCS.charIsRepresentable'@ to any 'MonadBase IO'.
+charIsRepresentable :: MonadBase IO m => Char -> m Bool
+charIsRepresentable = liftBase . FCS.charIsRepresentable
 
 
 --------------------------------------------------------------------------------
@@ -199,15 +211,21 @@ charIsRepresentable = liftIO . FCS.charIsRepresentable
 -- | Marshal a NUL terminated C string into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCAString'@.
-peekCAString ∷ (AllocatedPointer pointer, AncestorRegion pr cr, MonadIO cr, MonadBase IO cr)
-             ⇒ RegionalCString pointer pr → cr String
+peekCAString :: ( AllocatedPointer pointer
+                , pr `AncestorRegion` cr
+                , MonadBase IO cr
+                )
+             => RegionalCString pointer pr -> cr String
 peekCAString = unsafeWrap FCS.peekCAString
 
 -- | Marshal a C string with explicit length into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCAStringLen'@.
-peekCAStringLen ∷ (AllocatedPointer pointer, AncestorRegion pr cr, MonadIO cr, MonadBase IO cr)
-                ⇒ RegionalCStringLen pointer pr → cr String
+peekCAStringLen :: ( AllocatedPointer pointer
+                   , pr `AncestorRegion` cr
+                   , MonadBase IO cr
+                   )
+                => RegionalCStringLen pointer pr -> cr String
 peekCAStringLen = wrapPeekStringLen FCS.peekCAStringLen
 
 -- | Marshal a Haskell string into a NUL terminated C string.
@@ -215,16 +233,22 @@ peekCAStringLen = wrapPeekStringLen FCS.peekCAStringLen
 -- The Haskell string may /not/ contain any NUL characters
 --
 -- Wraps: @Foreign.C.String.'FCS.newCAString'@.
-newCAString ∷ (RegionBaseControl IO pr, MonadIO pr)
-            ⇒ String → RegionT s pr (RegionalCString RegionalPtr (RegionT s pr))
+newCAString :: ( region ~ RegionT s pr
+               , RegionBaseControl IO pr
+               , MonadBase IO pr
+               )
+            => String -> region (RegionalCString RegionalPtr region)
 newCAString = wrapMalloc . FCS.newCAString
 
 -- | Marshal a Haskell string into a C string (ie, character array) with
 -- explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCAStringLen'@.
-newCAStringLen ∷ (RegionBaseControl IO pr, MonadIO pr)
-               ⇒ String → RegionT s pr (RegionalCStringLen RegionalPtr (RegionT s pr))
+newCAStringLen :: ( region ~ RegionT s pr
+                  , RegionBaseControl IO pr
+                  , MonadBase IO pr
+                  )
+               => String -> region (RegionalCStringLen RegionalPtr region)
 newCAStringLen = wrapNewStringLen . FCS.newCAStringLen
 
 -- | Marshal a Haskell string into a NUL terminated C string using temporary
@@ -236,12 +260,12 @@ newCAStringLen = wrapNewStringLen . FCS.newCAStringLen
 -- via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCAString'@.
-withCAString ∷ RegionBaseControl IO pr
-             ⇒ String
-             → (∀ sl. RegionalCString LocalPtr (LocalRegion sl s)
-                    → RegionT (Local s) pr α
-               )
-             → RegionT s pr α
+withCAString :: RegionBaseControl IO pr
+             => String
+             -> (forall sl. RegionalCString LocalPtr (LocalRegion sl s)
+                -> RegionT (Local s) pr a
+                )
+             -> RegionT s pr a
 withCAString = wrapAlloca . FCS.withCAString
 
 -- | Marshal a Haskell string into a C string (ie, character array) in temporary
@@ -251,12 +275,12 @@ withCAString = wrapAlloca . FCS.withCAString
 --   via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCAStringLen'@.
-withCAStringLen ∷ RegionBaseControl IO pr
-                ⇒ String
-                → (∀ sl. RegionalCStringLen LocalPtr (LocalRegion sl s)
-                       → RegionT (Local s) pr α
-                  )
-                → RegionT s pr α
+withCAStringLen :: RegionBaseControl IO pr
+                => String
+                -> (forall sl. RegionalCStringLen LocalPtr (LocalRegion sl s)
+                   -> RegionT (Local s) pr a
+                   )
+                -> RegionT s pr a
 withCAStringLen = wrapWithStringLen . FCS.withCAStringLen
 
 
@@ -268,7 +292,7 @@ withCAStringLen = wrapWithStringLen . FCS.withCAStringLen
 -- terminated by a NUL.
 --
 -- This should provide a safer replacement for @Foreign.C.String.'CWString'@.
-type RegionalCWString (pointer ∷ * → (* → *) → *) r = pointer CWchar r
+type RegionalCWString (pointer :: * -> (* -> *) -> *) r = pointer CWchar r
 
 -- | Handy type synonym for a regional pointer to an array of C wide characters
 -- which is paired with the length of the array instead of terminated by a NUL.
@@ -280,15 +304,21 @@ type RegionalCWStringLen pointer r = (RegionalCWString pointer r, Int)
 -- | Marshal a NUL terminated C wide string into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCWString'@.
-peekCWString ∷ (AllocatedPointer pointer, AncestorRegion pr cr, MonadIO cr)
-             ⇒ RegionalCWString pointer pr → cr String
+peekCWString :: ( AllocatedPointer pointer
+                , pr `AncestorRegion` cr
+                , MonadBase IO cr
+                )
+             => RegionalCWString pointer pr -> cr String
 peekCWString = unsafeWrap FCS.peekCWString
 
 -- | Marshal a C wide string with explicit length into a Haskell string.
 --
 -- Wraps: @Foreign.C.String.'FCS.peekCWStringLen'@.
-peekCWStringLen ∷ (AllocatedPointer pointer, AncestorRegion pr cr, MonadIO cr, MonadBase IO cr)
-                ⇒ RegionalCWStringLen pointer pr → cr String
+peekCWStringLen :: ( AllocatedPointer pointer
+                   , pr `AncestorRegion` cr
+                   , MonadBase IO cr
+                   )
+                => RegionalCWStringLen pointer pr -> cr String
 peekCWStringLen = wrapPeekStringLen FCS.peekCWStringLen
 
 -- | Marshal a Haskell string into a NUL terminated C wide string.
@@ -296,16 +326,19 @@ peekCWStringLen = wrapPeekStringLen FCS.peekCWStringLen
 -- The Haskell string may /not/ contain any NUL characters.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCWString'@.
-newCWString ∷ RegionBaseControl IO pr
-            ⇒ String → RegionT s pr (RegionalCWString RegionalPtr (RegionT s pr))
+newCWString :: (region ~ RegionT s pr, RegionBaseControl IO pr)
+            => String -> region (RegionalCWString RegionalPtr region)
 newCWString = wrapMalloc . FCS.newCWString
 
 -- | Marshal a Haskell string into a C wide string (ie, wide character array)
 -- with explicit length information.
 --
 -- Wraps: @Foreign.C.String.'FCS.newCWStringLen'@.
-newCWStringLen ∷ (RegionBaseControl IO pr, MonadIO pr)
-               ⇒ String → RegionT s pr (RegionalCWStringLen RegionalPtr (RegionT s pr))
+newCWStringLen :: ( region ~ RegionT s pr
+                  , RegionBaseControl IO pr
+                  , MonadBase IO pr
+                  )
+               => String -> region (RegionalCWStringLen RegionalPtr region)
 newCWStringLen = wrapNewStringLen . FCS.newCWStringLen
 
 -- | Marshal a Haskell string into a NUL terminated C wide string using
@@ -317,12 +350,12 @@ newCWStringLen = wrapNewStringLen . FCS.newCWStringLen
 --   normally or via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCWString'@.
-withCWString ∷ RegionBaseControl IO pr
-             ⇒ String
-             → (∀ sl. RegionalCWString LocalPtr (LocalRegion sl s)
-                    → RegionT (Local s) pr α
-               )
-             → RegionT s pr α
+withCWString :: RegionBaseControl IO pr
+             => String
+             -> (forall sl. RegionalCWString LocalPtr (LocalRegion sl s)
+                -> RegionT (Local s) pr a
+                )
+             -> RegionT s pr a
 withCWString = wrapAlloca . FCS.withCWString
 
 -- | Marshal a Haskell string into a NUL terminated C wide string using
@@ -334,13 +367,10 @@ withCWString = wrapAlloca . FCS.withCWString
 --   normally or via an exception).
 --
 -- Wraps: @Foreign.C.String.'FCS.withCWStringLen'@.
-withCWStringLen ∷ RegionBaseControl IO pr
-                ⇒ String
-                → (∀ sl. RegionalCWStringLen LocalPtr (LocalRegion sl s)
-                       → RegionT (Local s) pr α
-                  )
-                → RegionT s pr α
+withCWStringLen :: RegionBaseControl IO pr
+                => String
+                -> (forall sl. RegionalCWStringLen LocalPtr (LocalRegion sl s)
+                   -> RegionT (Local s) pr a
+                   )
+                -> RegionT s pr a
 withCWStringLen = wrapWithStringLen . FCS.withCWStringLen
-
-
--- The End ---------------------------------------------------------------------

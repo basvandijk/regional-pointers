@@ -1,4 +1,6 @@
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE NoImplicitPrelude
+           , FlexibleContexts
+           , TypeOperators #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -30,8 +32,10 @@ import qualified Foreign.Storable as FS ( peekElemOff, pokeElemOff
                                         , peekByteOff, pokeByteOff
                                         , peek,        poke
                                         )
--- from transformers:
-import Control.Monad.IO.Class           ( MonadIO )
+import System.IO                        ( IO )
+
+-- from transformers-base:
+import Control.Monad.Base               ( MonadBase )
 
 -- from regions:
 import Control.Monad.Trans.Region       ( AncestorRegion )
@@ -57,10 +61,10 @@ import Foreign.Ptr.Region.Unsafe        ( unsafeWrap, unsafeWrap2, unsafeWrap3 )
 -- implementation of the function.
 --
 -- Wraps: @Foreign.Storable.'FS.peekElemOff'@.
-peekElemOff ∷ ( AllocatedPointer pointer, Storable α
-              , pr `AncestorRegion` cr, MonadIO cr
-              )
-            ⇒ pointer α pr → Int → cr α
+peekElemOff :: ( AllocatedPointer pointer, Storable a
+               , pr `AncestorRegion` cr, MonadBase IO cr
+               )
+            => pointer a pr -> Int -> cr a
 peekElemOff = unsafeWrap2 FS.peekElemOff
 
 -- | Write a value to a memory area regarded as an array of values of the same
@@ -70,10 +74,10 @@ peekElemOff = unsafeWrap2 FS.peekElemOff
 -- >   poke (addr `plusPtr` (idx * sizeOf x)) x
 --
 -- Wraps: @Foreign.Storable.'FS.pokeElemOff'@.
-pokeElemOff ∷ ( AllocatedPointer pointer, Storable α
-              , pr `AncestorRegion` cr, MonadIO cr
-              )
-            ⇒ pointer α pr → Int → α → cr ()
+pokeElemOff :: ( AllocatedPointer pointer, Storable a
+               , pr `AncestorRegion` cr, MonadBase IO cr
+               )
+            => pointer a pr -> Int -> a -> cr ()
 pokeElemOff = unsafeWrap3 FS.pokeElemOff
 
 -- | Read a value from a memory location given by a base address and offset.
@@ -82,10 +86,10 @@ pokeElemOff = unsafeWrap3 FS.pokeElemOff
 -- > peekByteOff addr off = peek (addr `plusPtr` off)
 --
 -- Wraps: @Foreign.Storable.'FS.peekByteOff'@.
-peekByteOff ∷ ( AllocatedPointer pointer, Storable α
-              , pr `AncestorRegion` cr, MonadIO cr
-              )
-            ⇒ pointer β pr → Int → cr α
+peekByteOff :: ( AllocatedPointer pointer, Storable a
+               , pr `AncestorRegion` cr, MonadBase IO cr
+               )
+            => pointer b pr -> Int -> cr a
 peekByteOff = unsafeWrap2 FS.peekByteOff
 
 -- | Write a value to a memory location given by a base address and offset.  The
@@ -94,10 +98,10 @@ peekByteOff = unsafeWrap2 FS.peekByteOff
 -- > pokeByteOff addr off x = poke (addr `plusPtr` off) x
 --
 -- Wraps: @Foreign.Storable.'FS.pokeByteOff'@.
-pokeByteOff ∷ ( AllocatedPointer pointer, Storable α
-              , pr `AncestorRegion` cr, MonadIO cr
-              )
-            ⇒ pointer β pr → Int → α → cr ()
+pokeByteOff :: ( AllocatedPointer pointer, Storable a
+               , pr `AncestorRegion` cr, MonadBase IO cr
+               )
+            => pointer b pr -> Int -> a -> cr ()
 pokeByteOff = unsafeWrap3 FS.pokeByteOff
 
 -- | Read a value from the given memory location.
@@ -109,21 +113,18 @@ pokeByteOff = unsafeWrap3 FS.pokeByteOff
 -- is fulfilled.
 --
 -- Wraps: @Foreign.Storable.'FS.peek'@.
-peek ∷ ( AllocatedPointer pointer, Storable α
-       , AncestorRegion pr cr, MonadIO cr
-       )
-     ⇒ pointer α pr → cr α
+peek :: ( AllocatedPointer pointer, Storable a
+        , AncestorRegion pr cr, MonadBase IO cr
+        )
+     => pointer a pr -> cr a
 peek = unsafeWrap FS.peek
 
 -- | Write the given value to the given memory location.  Alignment restrictions
 -- might apply; see 'peek'.
 --
 -- Wraps: @Foreign.Storable.'FS.poke'@.
-poke ∷ ( AllocatedPointer pointer, Storable α
-       , AncestorRegion pr cr, MonadIO cr
-       )
-     ⇒ pointer α pr → α → cr ()
+poke :: ( AllocatedPointer pointer, Storable a
+        , AncestorRegion pr cr, MonadBase IO cr
+        )
+     => pointer a pr -> a -> cr ()
 poke = unsafeWrap2 FS.poke
-
-
--- The End ---------------------------------------------------------------------

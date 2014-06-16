@@ -1,5 +1,5 @@
 name:          regional-pointers
-version:       0.7.0.1
+version:       0.8
 cabal-version: >=1.6
 build-type:    Custom
 license:       BSD3
@@ -40,9 +40,7 @@ Library
   GHC-Options: -Wall -Werror
   build-depends: base                 >= 4.7   && < 4.8
                , regions              >= 0.12  && < 0.13
-               , transformers         >= 0.2   && < 0.4
                , transformers-base    >= 0.4   && < 0.5
-               , exceptions           >= 0.6
   exposed-modules: Foreign.Ptr.Region
                    Foreign.Ptr.Region.Unsafe
                    Foreign.Marshal.Alloc.Region
@@ -51,12 +49,12 @@ Library
                    Foreign.Storable.Region
                    Foreign.C.String.Region
   other-modules:   Foreign.Ptr.Region.Internal
-  extensions:      NoImplicitPrelude
-                   KindSignatures
-                   TypeOperators
   other-extensions: ImpredicativeTypes
                     CPP
                     FlexibleContexts
                     RankNTypes
                     ScopedTypeVariables
                     GADTs
+                    TypeFamilies
+                    NoImplicitPrelude
+                    TypeOperators

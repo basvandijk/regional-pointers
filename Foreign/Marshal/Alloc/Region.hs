@@ -1,9 +1,9 @@
-{-# LANGUAGE UnicodeSyntax
+{-# LANGUAGE NoImplicitPrelude
            , RankNTypes
            , ScopedTypeVariables
            , FlexibleContexts
            , CPP
-  #-}
+           , TypeFamilies #-}
 
 -------------------------------------------------------------------------------
 -- |
@@ -33,7 +33,7 @@ module Foreign.Marshal.Alloc.Region
 -- from base:
 import Data.Int                               ( Int )
 import Foreign.Storable                       ( Storable )
-import Prelude                                ( IO )
+import System.IO                              ( IO )
 
 import qualified Foreign.Marshal.Alloc as FMA ( alloca, allocaBytes
                                               , malloc, mallocBytes
@@ -59,16 +59,17 @@ import Foreign.Ptr.Region.Unsafe   ( wrapAlloca, wrapMalloc )
 
 {-|
 @'alloca' f@ executes the computation @f@, passing as argument a pointer to
-a temporarily allocated block of memory sufficient to hold values of type @&#945;@.
+a temporarily allocated block of memory sufficient to hold values of type @a@.
 
 The memory is freed when @f@ terminates (either normally or via an exception).
 
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.alloca'@.
 -}
-alloca ∷ (Storable α, RegionBaseControl IO pr)
-       ⇒ (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
-       → RegionT s pr β
+alloca :: (RegionBaseControl IO pr, Storable a)
+       => (forall sl. LocalPtr a (LocalRegion sl s)
+          -> RegionT (Local s) pr b)
+       -> RegionT s pr b
 alloca = wrapAlloca FMA.alloca
 
 {-|
@@ -82,19 +83,21 @@ The memory is freed when @f@ terminates (either normally or via an exception).
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.allocaBytes'@.
 -}
-allocaBytes ∷ RegionBaseControl IO pr
-            ⇒ Int
-            → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
-            → RegionT s pr β
+allocaBytes :: (RegionBaseControl IO pr)
+            => Int
+            -> (forall sl. LocalPtr a (LocalRegion sl s)
+               -> RegionT (Local s) pr b)
+            -> RegionT s pr b
 allocaBytes size = wrapAlloca (FMA.allocaBytes size)
 
 -- | This should provide a safer replacement for:
 -- @Foreign.Marshal.Alloc.'FMA.allocaBytesAligned'@.
-allocaBytesAligned ∷
-    RegionBaseControl IO pr
-  ⇒ Int → Int
-  → (∀ sl. LocalPtr α (LocalRegion sl s) → RegionT (Local s) pr β)
-  → RegionT s pr β
+allocaBytesAligned
+  :: (RegionBaseControl IO pr)
+  => Int -> Int
+  -> (forall sl. LocalPtr a (LocalRegion sl s)
+     -> RegionT (Local s) pr b)
+  -> RegionT s pr b
 allocaBytesAligned size align = wrapAlloca (FMA.allocaBytesAligned size align)
 
 
@@ -103,15 +106,15 @@ allocaBytesAligned size align = wrapAlloca (FMA.allocaBytesAligned size align)
 --------------------------------------------------------------------------------
 
 {-|
-Allocate a block of memory that is sufficient to hold values of type @&#945;@.
+Allocate a block of memory that is sufficient to hold values of type @a@.
 
-Note that: @malloc = 'mallocBytes' $ 'sizeOf' (undefined :: &#945;)@
+Note that: @malloc = 'mallocBytes' $ 'sizeOf' (undefined :: a)@
 
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.malloc'@.
 -}
-malloc ∷ ∀ α pr s. (Storable α, RegionBaseControl IO pr)
-       ⇒ RegionT s pr (RegionalPtr α (RegionT s pr))
+malloc :: (region ~ RegionT s pr, RegionBaseControl IO pr, Storable a)
+       => region (RegionalPtr a region)
 malloc = wrapMalloc FMA.malloc
 
 {-|
@@ -122,18 +125,15 @@ that fits into a memory block of the allocated size.
 This should provide a safer replacement for:
 @Foreign.Marshal.Alloc.'FMA.mallocBytes'@.
 -}
-mallocBytes ∷ RegionBaseControl IO pr
-            ⇒ Int
-            → RegionT s pr (RegionalPtr α (RegionT s pr))
+mallocBytes :: (region ~ RegionT s pr, RegionBaseControl IO pr)
+            => Int
+            -> region (RegionalPtr a region)
 mallocBytes size = wrapMalloc (FMA.mallocBytes size)
 
 -- TODO:
--- realloc ∷ (Storable β, pr `AncestorRegion` cr, MonadIO cr)
---         ⇒ RegionalPtr α pr → cr (RegionalPtr β pr)
+-- realloc :: (Storable b, pr `AncestorRegion` cr, MonadBase IO cr)
+--         => RegionalPtr a pr -> cr (RegionalPtr b pr)
 -- realloc = ...
--- reallocBytes ∷ (pr `AncestorRegion` cr, MonadIO cr)
---              ⇒ RegionalPtr α pr → Int → cr (RegionalPtr α pr)
+-- reallocBytes :: (pr `AncestorRegion` cr, MonadBase IO cr)
+--              => RegionalPtr a pr -> Int -> cr (RegionalPtr a pr)
 -- reallocBytes = ...
-
-
--- The End ---------------------------------------------------------------------
